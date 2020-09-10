@@ -9,9 +9,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"github.com/hyperledger/fabric/core/chaincode/shim"
-	pb "github.com/hyperledger/fabric/protos/peer"
+        logger "github.com/sirupsen/logrus"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/lgsvl/data-marketplace-chaincode/utils"
 )
 
@@ -33,30 +33,30 @@ type DataContractProposal struct {
 	Extras                ContractExtras `json:"extras"`
 }
 
-func SubmitDataContractProposal(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, dataContractProposal DataContractProposal) pb.Response {
+func SubmitDataContractProposal(stub shim.ChaincodeStubInterface, dataContractProposal DataContractProposal) pb.Response {
 	logger.Info("entering-create-dataContract")
 	defer logger.Info("exiting-create-dataContract")
 
 	// === Check that data is accurate
-	dataContractType, err := dataContractProposal.checkAndGetAttributes(logger, stub)
+	dataContractType, err := dataContractProposal.checkAndGetAttributes(stub)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 
 	// === approve account transfer
-	consumerAccount, err := utils.GetAccountIDFromToken(logger, fmt.Sprintf("%s-%s", ACCOUNT_DOCTYPE, dataContractProposal.ConsumerID))
+	consumerAccount, err := utils.GetAccountIDFromToken(fmt.Sprintf("%s-%s", ACCOUNT_DOCTYPE, dataContractProposal.ConsumerID))
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
-	providerAccount, err := utils.GetAccountIDFromToken(logger, fmt.Sprintf("%s-%s", ACCOUNT_DOCTYPE, dataContractType.ProviderID))
+	providerAccount, err := utils.GetAccountIDFromToken(fmt.Sprintf("%s-%s", ACCOUNT_DOCTYPE, dataContractType.ProviderID))
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 
-	approval, err := Approve(logger, stub, consumerAccount, providerAccount, dataContractType.PriceType.Amount)
+	approval, err := Approve(stub, consumerAccount, providerAccount, dataContractType.PriceType.Amount)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -130,11 +130,11 @@ func SubmitDataContractProposal(logger *shim.ChaincodeLogger, stub shim.Chaincod
 	return shim.Success(nil)
 }
 
-func GetDataContract(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, id string) pb.Response {
+func GetDataContract(stub shim.ChaincodeStubInterface, id string) pb.Response {
 	logger.Info("entering-get-dataContract")
 	defer logger.Info("exiting-get-dataContract")
 
-	dataContractAsBytes, err := GetDataContractState(logger, stub, id)
+	dataContractAsBytes, err := GetDataContractState(stub, id)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -143,7 +143,7 @@ func GetDataContract(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterf
 	return shim.Success(dataContractAsBytes)
 }
 
-func GetDataContractState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, id string) ([]byte, error) {
+func GetDataContractState(stub shim.ChaincodeStubInterface, id string) ([]byte, error) {
 	logger.Info("entering-get-dataContract-state")
 	defer logger.Info("exiting-get-dataContract-state")
 	dataContractAsBytes, err := stub.GetState(id) //get the dataContractBytes from chaincode state
@@ -179,7 +179,7 @@ func GetDataContractState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubI
 	return dataContractAsBytes, nil
 }
 
-func (d *DataContract) checkAttributes(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) error {
+func (d *DataContract) checkAttributes(stub shim.ChaincodeStubInterface) error {
 	logger.Info("entering-checkAttributes-dataContract")
 	defer logger.Info("exiting-checkAttributes-dataContract")
 
@@ -189,7 +189,7 @@ func (d *DataContract) checkAttributes(logger *shim.ChaincodeLogger, stub shim.C
 		return fmt.Errorf(errorMsg)
 	}
 
-	_, err := GetBusinessState(logger, stub, d.ConsumerID)
+	_, err := GetBusinessState(stub, d.ConsumerID)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
@@ -198,17 +198,17 @@ func (d *DataContract) checkAttributes(logger *shim.ChaincodeLogger, stub shim.C
 	return nil
 }
 
-func (d *DataContractProposal) checkAndGetAttributes(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) (DataContractType, error) {
+func (d *DataContractProposal) checkAndGetAttributes(stub shim.ChaincodeStubInterface) (DataContractType, error) {
 	logger.Info("entering-checkAttributes-SubmitDataContractProposal")
 	defer logger.Info("exiting-checkAttributes-SubmitDataContractProposal")
 
-	_, err := GetBusinessState(logger, stub, d.ConsumerID)
+	_, err := GetBusinessState(stub, d.ConsumerID)
 	if err != nil {
 		logger.Error(err.Error())
 		return DataContractType{}, err
 	}
 
-	dataContractTypeBytes, err := GetDataContractTypeState(logger, stub, d.DataContractTypeID)
+	dataContractTypeBytes, err := GetDataContractTypeState(stub, d.DataContractTypeID)
 	if err != nil {
 		logger.Error(err.Error())
 		return DataContractType{}, err
@@ -225,7 +225,7 @@ func (d *DataContractProposal) checkAndGetAttributes(logger *shim.ChaincodeLogge
 	return dataContractType, nil
 }
 
-func (d *DataContract) SetFileStatus(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, status DataContractStatus, hash Hash, setHash bool) error {
+func (d *DataContract) SetFileStatus(stub shim.ChaincodeStubInterface, status DataContractStatus, hash Hash, setHash bool) error {
 	logger.Info("entering-dataContract-setfilestatus")
 	defer logger.Info("exiting-dataContract-setfilestatus")
 

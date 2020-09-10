@@ -20,7 +20,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -28,28 +27,13 @@ import (
 	"net"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
+
 	pb "google.golang.org/grpc/examples/features/proto/echo"
-	"google.golang.org/grpc/status"
 )
 
 var port = flag.Int("port", 50051, "the port to serve on")
 
-type server struct{}
-
-func (s *server) UnaryEcho(ctx context.Context, in *pb.EchoRequest) (*pb.EchoResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "not implemented")
-}
-
-func (s *server) ServerStreamingEcho(in *pb.EchoRequest, stream pb.Echo_ServerStreamingEchoServer) error {
-	return status.Error(codes.Unimplemented, "not implemented")
-}
-
-func (s *server) ClientStreamingEcho(stream pb.Echo_ClientStreamingEchoServer) error {
-	return status.Error(codes.Unimplemented, "not implemented")
-}
-
-func (s *server) BidirectionalStreamingEcho(stream pb.Echo_BidirectionalStreamingEchoServer) error {
+func bidirectionalStreamingEcho(stream pb.Echo_BidirectionalStreamingEchoServer) error {
 	for {
 		in, err := stream.Recv()
 		if err != nil {
@@ -73,6 +57,6 @@ func main() {
 	}
 	fmt.Printf("server listening at port %v\n", lis.Addr())
 	s := grpc.NewServer()
-	pb.RegisterEchoServer(s, &server{})
+	pb.RegisterEchoService(s, &pb.EchoService{BidirectionalStreamingEcho: bidirectionalStreamingEcho})
 	s.Serve(lis)
 }

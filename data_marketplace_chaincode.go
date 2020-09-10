@@ -10,19 +10,24 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/hyperledger/fabric/core/chaincode/shim"
-	pb "github.com/hyperledger/fabric/protos/peer"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
+	"github.com/sirupsen/logrus"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/lgsvl/data-marketplace-chaincode/resources"
 	"github.com/lgsvl/data-marketplace-chaincode/utils"
 )
 
+var logger = logrus.New()
+
 // DataMarketplaceChaincode datamarketplace Chaincode implementation
 type DataMarketplaceChaincode struct {
-	logger *shim.ChaincodeLogger
+	logger *logrus.Logger
 }
 
-func NewDataMarketplaceChaincode(l *shim.ChaincodeLogger) *DataMarketplaceChaincode {
-	return &DataMarketplaceChaincode{logger: l}
+//func NewDataMarketplaceChaincode(l *logrus.Logger) *DataMarketplaceChaincode {
+func NewDataMarketplaceChaincode() *DataMarketplaceChaincode {
+	//return &DataMarketplaceChaincode{logger: l}
+	return &DataMarketplaceChaincode{logger}
 }
 
 func (d *DataMarketplaceChaincode) Init(stub shim.ChaincodeStubInterface) pb.Response {
@@ -180,19 +185,19 @@ func (d *DataMarketplaceChaincode) Invoke(stub shim.ChaincodeStubInterface) pb.R
 func (d *DataMarketplaceChaincode) createToken(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 2 {
 		errorMsg := fmt.Sprintf("incorrect-number-of-arguments-expecting-2-got%d", len(args))
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	tokenTotalSupply, err := strconv.ParseFloat(args[1], 64)
 	if err != nil {
-		d.logger.Error(err.Error())
+		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 
-	_, err = resources.NewTokenWithSupply(d.logger, stub, args[0], tokenTotalSupply)
+	_, err = resources.NewTokenWithSupply(stub, args[0], tokenTotalSupply)
 	if err != nil {
-		d.logger.Error(err.Error())
+		logger.Error(err.Error())
 		if err.Error() != "this-token-already-exists-dmpoken" {
 			return shim.Error(err.Error())
 		}
@@ -203,22 +208,22 @@ func (d *DataMarketplaceChaincode) createToken(stub shim.ChaincodeStubInterface,
 }
 func (d *DataMarketplaceChaincode) createAccount(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 1 {
-		d.logger.Error("incorrect-number-of-arguments-expecting-1")
+		logger.Error("incorrect-number-of-arguments-expecting-1")
 		return shim.Error("incorrect-number-of-arguments-expecting-1")
 	}
 	account := resources.Account{}
 	err := json.Unmarshal([]byte(args[0]), &account)
 	if err != nil {
 		errorMsg := "error-unmarshalling-business-infos"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
-	return resources.CreateAccount(d.logger, stub, account)
+	return resources.CreateAccount(stub, account)
 }
 
 func (d *DataMarketplaceChaincode) setAccountBalance(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 3 {
-		d.logger.Error("incorrect-number-of-arguments-expecting-3")
+		logger.Error("incorrect-number-of-arguments-expecting-3")
 		return shim.Error("incorrect-number-of-arguments-expecting-3")
 	}
 	token := resources.Token{ID: args[0], DocType: resources.TOKEN_DOCTYPE}
@@ -226,12 +231,12 @@ func (d *DataMarketplaceChaincode) setAccountBalance(stub shim.ChaincodeStubInte
 	tokens, err := strconv.ParseFloat(args[2], 64)
 	if err != nil {
 		errorMsg := fmt.Sprintf("error-parsing-tokens-%s", args[2])
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
-	_, err = token.SetAccountBalance(d.logger, stub, account, tokens)
+	_, err = token.SetAccountBalance(stub, account, tokens)
 	if err != nil {
-		d.logger.Error(err.Error())
+		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 
@@ -241,7 +246,7 @@ func (d *DataMarketplaceChaincode) setAccountBalance(stub shim.ChaincodeStubInte
 	transfer.Value = tokens
 	evtData, err := json.Marshal(transfer)
 	if err != nil {
-		d.logger.Error(err.Error())
+		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 
@@ -251,14 +256,14 @@ func (d *DataMarketplaceChaincode) setAccountBalance(stub shim.ChaincodeStubInte
 
 func (d *DataMarketplaceChaincode) totalSupply(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 1 {
-		d.logger.Error("incorrect-number-of-arguments-expecting-1")
+		logger.Error("incorrect-number-of-arguments-expecting-1")
 		return shim.Error("incorrect-number-of-arguments-expecting-1")
 	}
 	token := resources.Token{ID: args[0], DocType: resources.TOKEN_DOCTYPE}
 
-	total, err := token.TotalSupply(d.logger, stub)
+	total, err := token.TotalSupply(stub)
 	if err != nil {
-		d.logger.Error(err.Error())
+		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 	resString := fmt.Sprintf("%f", total)
@@ -267,14 +272,14 @@ func (d *DataMarketplaceChaincode) totalSupply(stub shim.ChaincodeStubInterface,
 
 func (d *DataMarketplaceChaincode) availableSupply(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 1 {
-		d.logger.Error("incorrect-number-of-arguments-expecting-1")
+		logger.Error("incorrect-number-of-arguments-expecting-1")
 		return shim.Error("incorrect-number-of-arguments-expecting-1")
 	}
 	token := resources.Token{ID: args[0], DocType: resources.TOKEN_DOCTYPE}
 
-	available, err := token.AvailableSupply(d.logger, stub)
+	available, err := token.AvailableSupply(stub)
 	if err != nil {
-		d.logger.Error(err.Error())
+		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 	resString := fmt.Sprintf("%f", available)
@@ -283,14 +288,14 @@ func (d *DataMarketplaceChaincode) availableSupply(stub shim.ChaincodeStubInterf
 
 func (d *DataMarketplaceChaincode) balanceOf(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 2 {
-		d.logger.Error("incorrect-number-of-arguments-expecting-2")
+		logger.Error("incorrect-number-of-arguments-expecting-2")
 		return shim.Error("incorrect-number-of-arguments-expecting-2")
 	}
 
 	account := resources.Account{DocType: resources.ACCOUNT_DOCTYPE, ID: args[1]}
-	balance, err := resources.BalanceOf(d.logger, stub, account)
+	balance, err := resources.BalanceOf(stub, account)
 	if err != nil {
-		d.logger.Error(err.Error())
+		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 	resString := fmt.Sprintf("%f", balance)
@@ -299,16 +304,16 @@ func (d *DataMarketplaceChaincode) balanceOf(stub shim.ChaincodeStubInterface, a
 
 func (d *DataMarketplaceChaincode) allowances(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 3 {
-		d.logger.Error("incorrect-number-of-arguments-expecting-3")
+		logger.Error("incorrect-number-of-arguments-expecting-3")
 		return shim.Error("incorrect-number-of-arguments-expecting-3")
 	}
 
 	owner := resources.Account{ID: args[1], DocType: resources.ACCOUNT_DOCTYPE}
 	spender := resources.Account{ID: args[2], DocType: resources.ACCOUNT_DOCTYPE}
 
-	allowances, err := resources.Allowance(d.logger, stub, owner, spender)
+	allowances, err := resources.Allowance(stub, owner, spender)
 	if err != nil {
-		d.logger.Error(err.Error())
+		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 	resString := fmt.Sprintf("%f", allowances)
@@ -320,25 +325,25 @@ func (d *DataMarketplaceChaincode) transfer(stub shim.ChaincodeStubInterface, ar
 }
 
 func (d *DataMarketplaceChaincode) approve(stub shim.ChaincodeStubInterface, args []string) pb.Response {
-	d.logger.Debugf("entering-chaincode-approve")
-	defer d.logger.Debugf("exiting-chaincode-approve")
+	logger.Debugf("entering-chaincode-approve")
+	defer logger.Debugf("exiting-chaincode-approve")
 	if len(args) != 4 {
-		d.logger.Error("incorrect-number-of-arguments-expecting-4")
+		logger.Error("incorrect-number-of-arguments-expecting-4")
 		return shim.Error("incorrect-number-of-arguments-expecting-4")
 	}
 
 	tokens, err := strconv.ParseFloat(args[3], 64)
 	if err != nil {
 		errorMsg := fmt.Sprintf("error-parsing-tokens-%s", args[3])
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	d.logger.Debugf("approve-arguments-token-%s-owner-%s-spender-%s-amount-%f", args[0], args[1], args[2], tokens)
+	logger.Debugf("approve-arguments-token-%s-owner-%s-spender-%s-amount-%f", args[0], args[1], args[2], tokens)
 
-	_, err = resources.Approve(d.logger, stub, args[1], args[2], tokens)
+	_, err = resources.Approve(stub, args[1], args[2], tokens)
 	if err != nil {
-		d.logger.Error(err.Error())
+		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 	return shim.Success(nil)
@@ -346,20 +351,20 @@ func (d *DataMarketplaceChaincode) approve(stub shim.ChaincodeStubInterface, arg
 
 func (d *DataMarketplaceChaincode) transferFrom(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	if len(args) != 4 {
-		d.logger.Error("incorrect-number-of-arguments-expecting-4")
+		logger.Error("incorrect-number-of-arguments-expecting-4")
 		return shim.Error("incorrect-number-of-arguments-expecting-4")
 	}
 
 	tokens, err := strconv.ParseFloat(args[3], 64)
 	if err != nil {
 		errorMsg := fmt.Sprintf("error-parsing-tokens-%s", args[3])
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	_, err = resources.TransferFrom(d.logger, stub, args[1], args[2], tokens)
+	_, err = resources.TransferFrom(stub, args[1], args[2], tokens)
 	if err != nil {
-		d.logger.Error(err.Error())
+		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 
@@ -369,7 +374,7 @@ func (d *DataMarketplaceChaincode) transferFrom(stub shim.ChaincodeStubInterface
 	transfer.Value = tokens
 	evtData, err := json.Marshal(transfer)
 	if err != nil {
-		d.logger.Error(err.Error())
+		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 
@@ -382,14 +387,14 @@ func (d *DataMarketplaceChaincode) transferFrom(stub shim.ChaincodeStubInterface
 func (d *DataMarketplaceChaincode) createBusiness(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
-		d.logger.Error("incorrect-number-of-arguments-expecting-1")
+		logger.Error("incorrect-number-of-arguments-expecting-1")
 		return shim.Error("incorrect-number-of-arguments-expecting-1")
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
@@ -397,43 +402,43 @@ func (d *DataMarketplaceChaincode) createBusiness(stub shim.ChaincodeStubInterfa
 	err = json.Unmarshal([]byte(args[0]), &business)
 	if err != nil {
 		errorMsg := "error-unmarshalling-business-infos"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.CreateBusiness(d.logger, stub, business)
+	return resources.CreateBusiness(stub, business)
 }
 
 func (d *DataMarketplaceChaincode) getBusiness(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetBusiness(d.logger, stub, args[0])
+	return resources.GetBusiness(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) createCategory(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
@@ -441,43 +446,43 @@ func (d *DataMarketplaceChaincode) createCategory(stub shim.ChaincodeStubInterfa
 	err = json.Unmarshal([]byte(args[0]), &category)
 	if err != nil {
 		errorMsg := "error-unmarshalling-category-infos"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.CreateDataCategory(d.logger, stub, category)
+	return resources.CreateDataCategory(stub, category)
 }
 
 func (d *DataMarketplaceChaincode) getCategory(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataCategory(d.logger, stub, args[0])
+	return resources.GetDataCategory(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) createDataContractType(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
@@ -485,42 +490,42 @@ func (d *DataMarketplaceChaincode) createDataContractType(stub shim.ChaincodeStu
 	err = json.Unmarshal([]byte(args[0]), &dataContractType)
 	if err != nil {
 		errorMsg := "error-unmarshalling-dataContractType-infos"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
-	return resources.CreateDataContractType(d.logger, stub, dataContractType)
+	return resources.CreateDataContractType(stub, dataContractType)
 }
 
 func (d *DataMarketplaceChaincode) getDataContractType(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataContractType(d.logger, stub, args[0])
+	return resources.GetDataContractType(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) submitDataContractProposal(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
@@ -528,43 +533,43 @@ func (d *DataMarketplaceChaincode) submitDataContractProposal(stub shim.Chaincod
 	err = json.Unmarshal([]byte(args[0]), &dataContractProposal)
 	if err != nil {
 		errorMsg := "error-unmarshalling-submitDataContractProposal-infos"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SubmitDataContractProposal(d.logger, stub, dataContractProposal)
+	return resources.SubmitDataContractProposal(stub, dataContractProposal)
 }
 
 func (d *DataMarketplaceChaincode) getDataContract(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataContract(d.logger, stub, args[0])
+	return resources.GetDataContract(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) submitReview(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
@@ -572,43 +577,43 @@ func (d *DataMarketplaceChaincode) submitReview(stub shim.ChaincodeStubInterface
 	err = json.Unmarshal([]byte(args[0]), &review)
 	if err != nil {
 		errorMsg := "error-unmarshalling-review-infos"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SubmitReview(d.logger, stub, review)
+	return resources.SubmitReview(stub, review)
 }
 
 func (d *DataMarketplaceChaincode) getReview(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetReview(d.logger, stub, args[0])
+	return resources.GetReview(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) addPerson(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
@@ -616,43 +621,43 @@ func (d *DataMarketplaceChaincode) addPerson(stub shim.ChaincodeStubInterface, a
 	err = json.Unmarshal([]byte(args[0]), &person)
 	if err != nil {
 		errorMsg := "error-unmarshalling-person-infos"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.AddPerson(d.logger, stub, person)
+	return resources.AddPerson(stub, person)
 }
 
 func (d *DataMarketplaceChaincode) getPerson(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetPerson(d.logger, stub, args[0])
+	return resources.GetPerson(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) setDataInfoSentToConsumer(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
@@ -660,25 +665,25 @@ func (d *DataMarketplaceChaincode) setDataInfoSentToConsumer(stub shim.Chaincode
 	err = json.Unmarshal([]byte(args[0]), &dataInfoSentToConsumer)
 	if err != nil {
 		errorMsg := "error-unmarshalling-dataInfoSentToConsumer-infos"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SetDataInfoSentToConsumer(d.logger, stub, dataInfoSentToConsumer)
+	return resources.SetDataInfoSentToConsumer(stub, dataInfoSentToConsumer)
 }
 
 func (d *DataMarketplaceChaincode) setDataReceivedByConsumer(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
@@ -686,11 +691,11 @@ func (d *DataMarketplaceChaincode) setDataReceivedByConsumer(stub shim.Chaincode
 	err = json.Unmarshal([]byte(args[0]), &dataReceivedByConsumer)
 	if err != nil {
 		errorMsg := "error-unmarshalling-dataReceivedByConsumer-infos"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SetDataReceivedByConsumer(d.logger, stub, dataReceivedByConsumer)
+	return resources.SetDataReceivedByConsumer(stub, dataReceivedByConsumer)
 }
 
 // =========================================================================================
@@ -701,43 +706,43 @@ func (d *DataMarketplaceChaincode) getBusinesses(stub shim.ChaincodeStubInterfac
 	// should receive only the authorization token
 	if len(args) != 1 {
 		errorMsg := "incorrect-number-of-arguments-expecting-0"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[0])
+	err := utils.CheckAuth(args[0])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetBusinesses(d.logger, stub)
+	return resources.GetBusinesses(stub)
 }
 
 func (d *DataMarketplaceChaincode) getBusinessesWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 2 args and the authorization token
 	if len(args) != 3 {
 		errorMsg := "incorrect-number-of-arguments-expecting-2"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[2])
+	err := utils.CheckAuth(args[2])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[0])
 	if err != nil {
 		errorMsg := fmt.Sprintf("incorrect-page-size-format-%#v", args[0])
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetBusinessesWithPagination(d.logger, stub, int32(pageSize), args[1])
+	return resources.GetBusinessesWithPagination(stub, int32(pageSize), args[1])
 }
 
 // =========================================================================================
@@ -748,73 +753,73 @@ func (d *DataMarketplaceChaincode) getDataCategories(stub shim.ChaincodeStubInte
 	// should receive only the authorization token
 	if len(args) != 1 {
 		errorMsg := "incorrect-number-of-arguments-expecting-0"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[0])
+	err := utils.CheckAuth(args[0])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataCategories(d.logger, stub)
+	return resources.GetDataCategories(stub)
 }
 
 func (d *DataMarketplaceChaincode) getDataCategoriesWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 2 args and the authorization token
 	if len(args) != 3 {
 		errorMsg := "incorrect-number-of-arguments-expecting-2"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[2])
+	err := utils.CheckAuth(args[2])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[0])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataCategoriesWithPagination(d.logger, stub, int32(pageSize), args[1])
+	return resources.GetDataCategoriesWithPagination(stub, int32(pageSize), args[1])
 }
 
 func (d *DataMarketplaceChaincode) getPopularDataCategories(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 0 or 1 arg and the authorization token
 	switch len(args) {
 	case 1:
-		err := utils.CheckAuth(d.logger, args[0])
+		err := utils.CheckAuth(args[0])
 		if err != nil {
 			errorMsg := "operation-not-authorized"
-			d.logger.Error(errorMsg)
+			logger.Error(errorMsg)
 			return shim.Error(errorMsg)
 		}
-		return resources.GetPopularDataCategories(d.logger, stub, 8)
+		return resources.GetPopularDataCategories(stub, 8)
 	case 2:
-		err := utils.CheckAuth(d.logger, args[1])
+		err := utils.CheckAuth(args[1])
 		if err != nil {
 			errorMsg := "operation-not-authorized"
-			d.logger.Error(errorMsg)
+			logger.Error(errorMsg)
 			return shim.Error(errorMsg)
 		}
 		size, err := strconv.Atoi(args[0])
 		if err != nil {
 			errorMsg := "incorrect-size-format"
-			d.logger.Error(errorMsg)
+			logger.Error(errorMsg)
 			return shim.Error(errorMsg)
 		}
-		return resources.GetPopularDataCategories(d.logger, stub, int32(size))
+		return resources.GetPopularDataCategories(stub, int32(size))
 	default:
 		errorMsg := "incorrect-number-of-arguments-expecting-0"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 }
@@ -827,109 +832,109 @@ func (d *DataMarketplaceChaincode) getRecommendedDataContractType(stub shim.Chai
 	// should receive only the authorization token
 	if len(args) != 1 {
 		errorMsg := "incorrect-number-of-arguments-expecting-0"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[0])
+	err := utils.CheckAuth(args[0])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetRecommendedDataContractType(d.logger, stub)
+	return resources.GetRecommendedDataContractType(stub)
 }
 
 func (d *DataMarketplaceChaincode) getDataContractTypesAfterTimeStamp(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive only the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataContractTypesAfterTimeStamp(d.logger, stub, args[0])
+	return resources.GetDataContractTypesAfterTimeStamp(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) getDataContractTypes(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive only the authorization token
 	if len(args) != 1 {
 		errorMsg := "incorrect-number-of-arguments-expecting-0"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[0])
+	err := utils.CheckAuth(args[0])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataContractTypes(d.logger, stub)
+	return resources.GetDataContractTypes(stub)
 }
 
 func (d *DataMarketplaceChaincode) getDataContractTypesWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 2 args and the authorization token
 	if len(args) != 3 {
 		errorMsg := "incorrect-number-of-arguments-expecting-2"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[2])
+	err := utils.CheckAuth(args[2])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[0])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataContractTypesWithPagination(d.logger, stub, int32(pageSize), args[1])
+	return resources.GetDataContractTypesWithPagination(stub, int32(pageSize), args[1])
 }
 
 func (d *DataMarketplaceChaincode) getPopularDataContractTypes(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 0 or 1 arg and the authorization token
 	switch len(args) {
 	case 1:
-		err := utils.CheckAuth(d.logger, args[0])
+		err := utils.CheckAuth(args[0])
 		if err != nil {
 			errorMsg := "operation-not-authorized"
-			d.logger.Error(errorMsg)
+			logger.Error(errorMsg)
 			return shim.Error(errorMsg)
 		}
-		return resources.GetPopularDataContractTypes(d.logger, stub, 8)
+		return resources.GetPopularDataContractTypes(stub, 8)
 	case 2:
-		err := utils.CheckAuth(d.logger, args[1])
+		err := utils.CheckAuth(args[1])
 		if err != nil {
 			errorMsg := "operation-not-authorized"
-			d.logger.Error(errorMsg)
+			logger.Error(errorMsg)
 			return shim.Error(errorMsg)
 		}
 		size, err := strconv.Atoi(args[0])
 		if err != nil {
 			errorMsg := "incorrect-size-format"
-			d.logger.Error(errorMsg)
+			logger.Error(errorMsg)
 			return shim.Error(errorMsg)
 		}
-		return resources.GetPopularDataContractTypes(d.logger, stub, int32(size))
+		return resources.GetPopularDataContractTypes(stub, int32(size))
 	default:
 		errorMsg := "incorrect-number-of-arguments-expecting-0"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 }
@@ -938,104 +943,104 @@ func (d *DataMarketplaceChaincode) getDataContractTypesByCategory(stub shim.Chai
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataContractTypesByCategory(d.logger, stub, args[0])
+	return resources.GetDataContractTypesByCategory(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) getDataContractTypesByCategoryWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 3 args and the authorization token
 	if len(args) != 4 {
 		errorMsg := "incorrect-number-of-arguments-expecting-3"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[3])
+	err := utils.CheckAuth(args[3])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[1])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataContractTypesByCategoryWithPagination(d.logger, stub, args[0], int32(pageSize), args[2])
+	return resources.GetDataContractTypesByCategoryWithPagination(stub, args[0], int32(pageSize), args[2])
 }
 
 func (d *DataMarketplaceChaincode) getDataContractTypesByProvider(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataContractTypesByProvider(d.logger, stub, args[0])
+	return resources.GetDataContractTypesByProvider(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) getDataContractTypesByProviderWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 3 args and the authorization token
 	if len(args) != 4 {
 		errorMsg := "incorrect-number-of-arguments-expecting-3"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[3])
+	err := utils.CheckAuth(args[3])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[1])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataContractTypesByProviderWithPagination(d.logger, stub, args[0], int32(pageSize), args[2])
+	return resources.GetDataContractTypesByProviderWithPagination(stub, args[0], int32(pageSize), args[2])
 }
 
 func (d *DataMarketplaceChaincode) selectNumberOfBusinessDataSetsToUpload(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SelectNumberOfBusinessDataSetsToUpload(d.logger, stub, args[0])
+	return resources.SelectNumberOfBusinessDataSetsToUpload(stub, args[0])
 }
 
 // =========================================================================================
@@ -1046,506 +1051,506 @@ func (d *DataMarketplaceChaincode) getDataContracts(stub shim.ChaincodeStubInter
 	// should receive only the authorization token
 	if len(args) != 1 {
 		errorMsg := "incorrect-number-of-arguments-expecting-0"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[0])
+	err := utils.CheckAuth(args[0])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataContracts(d.logger, stub)
+	return resources.GetDataContracts(stub)
 }
 
 func (d *DataMarketplaceChaincode) getDataContractsWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 2 args and the authorization token
 	if len(args) != 3 {
 		errorMsg := "incorrect-number-of-arguments-expecting-2"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[2])
+	err := utils.CheckAuth(args[2])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[0])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataContractsWithPagination(d.logger, stub, int32(pageSize), args[1])
+	return resources.GetDataContractsWithPagination(stub, int32(pageSize), args[1])
 }
 
 func (d *DataMarketplaceChaincode) getDataContractsByProvider(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataContractsByProvider(d.logger, stub, args[0])
+	return resources.GetDataContractsByProvider(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) getDataContractsByProviderWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 3 args and the authorization token
 	if len(args) != 4 {
 		errorMsg := "incorrect-number-of-arguments-expecting-3"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[3])
+	err := utils.CheckAuth(args[3])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[1])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataContractsByProviderWithPagination(d.logger, stub, args[0], int32(pageSize), args[2])
+	return resources.GetDataContractsByProviderWithPagination(stub, args[0], int32(pageSize), args[2])
 }
 
 func (d *DataMarketplaceChaincode) getDataContractsByConsumer(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.GetDataContractsByConsumer(d.logger, stub, args[0])
+	return resources.GetDataContractsByConsumer(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) getDataContractsByConsumerWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 3 args and the authorization token
 	if len(args) != 4 {
 		errorMsg := "incorrect-number-of-arguments-expecting-3"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[3])
+	err := utils.CheckAuth(args[3])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[1])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
-	return resources.GetDataContractsByConsumerWithPagination(d.logger, stub, args[0], int32(pageSize), args[2])
+	return resources.GetDataContractsByConsumerWithPagination(stub, args[0], int32(pageSize), args[2])
 }
 
 func (d *DataMarketplaceChaincode) selectDataSetContractsToUpload(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SelectDataSetContractsToUpload(d.logger, stub, args[0])
+	return resources.SelectDataSetContractsToUpload(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) selectDataSetContractsToUploadWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 3 args and the authorization token
 	if len(args) != 4 {
 		errorMsg := "incorrect-number-of-arguments-expecting-3"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[3])
+	err := utils.CheckAuth(args[3])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[1])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
-	return resources.SelectDataSetContractsToUploadWithPagination(d.logger, stub, args[0], int32(pageSize), args[2])
+	return resources.SelectDataSetContractsToUploadWithPagination(stub, args[0], int32(pageSize), args[2])
 }
 
 func (d *DataMarketplaceChaincode) selectBusinessDataSetsToUpload(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SelectBusinessDataSetsToUpload(d.logger, stub, args[0])
+	return resources.SelectBusinessDataSetsToUpload(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) selectBusinessDataSetsToUploadWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 3 args and the authorization token
 	if len(args) != 4 {
 		errorMsg := "incorrect-number-of-arguments-expecting-3"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[3])
+	err := utils.CheckAuth(args[3])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[1])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
-	return resources.SelectBusinessDataSetsToUploadWithPagination(d.logger, stub, args[0], int32(pageSize), args[2])
+	return resources.SelectBusinessDataSetsToUploadWithPagination(stub, args[0], int32(pageSize), args[2])
 }
 
 func (d *DataMarketplaceChaincode) selectDataContractsByDataContractType(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SelectDataContractsByDataContractType(d.logger, stub, args[0])
+	return resources.SelectDataContractsByDataContractType(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) selectDataContractsByDataContractTypeWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 3 args and the authorization token
 	if len(args) != 4 {
 		errorMsg := "incorrect-number-of-arguments-expecting-3"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[3])
+	err := utils.CheckAuth(args[3])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[1])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
-	return resources.SelectDataContractsByDataContractTypeWithPagination(d.logger, stub, args[0], int32(pageSize), args[2])
+	return resources.SelectDataContractsByDataContractTypeWithPagination(stub, args[0], int32(pageSize), args[2])
 }
 func (d *DataMarketplaceChaincode) selectBusinessDataSetsToUploadByDataContractType(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SelectBusinessDataSetsToUploadByContractType(d.logger, stub, args[0])
+	return resources.SelectBusinessDataSetsToUploadByContractType(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) selectBusinessDataSetsToUploadByDataContractTypeWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 3 args and the authorization token
 	if len(args) != 4 {
 		errorMsg := "incorrect-number-of-arguments-expecting-3"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[3])
+	err := utils.CheckAuth(args[3])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[1])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
-	return resources.SelectBusinessDataSetsToUploadByContractTypeWithPagination(d.logger, stub, args[0], int32(pageSize), args[2])
+	return resources.SelectBusinessDataSetsToUploadByContractTypeWithPagination(stub, args[0], int32(pageSize), args[2])
 }
 func (d *DataMarketplaceChaincode) selectBusinessDataSetsSoldShippedNotDownloaded(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 2 args and the authorization token
 	if len(args) != 3 {
 		errorMsg := "incorrect-number-of-arguments-expecting-2"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[2])
+	err := utils.CheckAuth(args[2])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SelectBusinessDataSetsSoldShippedNotDownloaded(d.logger, stub, args[0], args[1])
+	return resources.SelectBusinessDataSetsSoldShippedNotDownloaded(stub, args[0], args[1])
 }
 
 func (d *DataMarketplaceChaincode) selectBusinessDataSetsSoldShippedNotDownloadedWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 4 args and the authorization token
 	if len(args) != 5 {
 		errorMsg := "incorrect-number-of-arguments-expecting-4"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[4])
+	err := utils.CheckAuth(args[4])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[2])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SelectBusinessDataSetsSoldShippedNotDownloadedWithPagination(d.logger, stub, args[0], args[1], int32(pageSize), args[3])
+	return resources.SelectBusinessDataSetsSoldShippedNotDownloadedWithPagination(stub, args[0], args[1], int32(pageSize), args[3])
 }
 
 func (d *DataMarketplaceChaincode) selectBusinessDataSetsSoldAndDownloaded(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 2 args and the authorization token
 	if len(args) != 3 {
 		errorMsg := "incorrect-number-of-arguments-expecting-2"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[2])
+	err := utils.CheckAuth(args[2])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SelectBusinessDataSetsSoldAndDownloaded(d.logger, stub, args[0], args[1])
+	return resources.SelectBusinessDataSetsSoldAndDownloaded(stub, args[0], args[1])
 }
 
 func (d *DataMarketplaceChaincode) selectBusinessDataSetsSoldAndDownloadedWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 4 args and the authorization token
 	if len(args) != 5 {
 		errorMsg := "incorrect-number-of-arguments-expecting-4"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[4])
+	err := utils.CheckAuth(args[4])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[2])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SelectBusinessDataSetsSoldAndDownloadedWithPagination(d.logger, stub, args[0], args[1], int32(pageSize), args[3])
+	return resources.SelectBusinessDataSetsSoldAndDownloadedWithPagination(stub, args[0], args[1], int32(pageSize), args[3])
 }
 
 func (d *DataMarketplaceChaincode) selectBusinessDataSetsPurchasedNotUploaded(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 1 arg and the authorization token
 	if len(args) != 2 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[1])
+	err := utils.CheckAuth(args[1])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SelectBusinessDataSetsPurchasedNotUploaded(d.logger, stub, args[0])
+	return resources.SelectBusinessDataSetsPurchasedNotUploaded(stub, args[0])
 }
 
 func (d *DataMarketplaceChaincode) selectBusinessDataSetsPurchasedNotUploadedWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 3 args and the authorization token
 	if len(args) != 4 {
 		errorMsg := "incorrect-number-of-arguments-expecting-3"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[3])
+	err := utils.CheckAuth(args[3])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[1])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
-	return resources.SelectBusinessDataSetsPurchasedNotUploadedWithPagination(d.logger, stub, args[0], int32(pageSize), args[2])
+	return resources.SelectBusinessDataSetsPurchasedNotUploadedWithPagination(stub, args[0], int32(pageSize), args[2])
 }
 
 func (d *DataMarketplaceChaincode) selectBusinessDataSetsPurchasedUploadedNotDownloaded(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 2 args and the authorization token
 	if len(args) != 3 {
 		errorMsg := "incorrect-number-of-arguments-expecting-2"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[2])
+	err := utils.CheckAuth(args[2])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SelectBusinessDataSetsPurchasedUploadedNotDownloaded(d.logger, stub, args[0], args[1])
+	return resources.SelectBusinessDataSetsPurchasedUploadedNotDownloaded(stub, args[0], args[1])
 }
 
 func (d *DataMarketplaceChaincode) selectBusinessDataSetsPurchasedUploadedNotDownloadedWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 3 args and the authorization token
 	if len(args) != 4 {
 		errorMsg := "incorrect-number-of-arguments-expecting-4"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[3])
+	err := utils.CheckAuth(args[3])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[2])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
-	return resources.SelectBusinessDataSetsPurchasedUploadedNotDownloadedWithPagination(d.logger, stub, args[0], args[1], int32(pageSize), args[3])
+	return resources.SelectBusinessDataSetsPurchasedUploadedNotDownloadedWithPagination(stub, args[0], args[1], int32(pageSize), args[3])
 }
 
 func (d *DataMarketplaceChaincode) selectBusinessDataSetsPurchasedDownloaded(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 3 args and the authorization token
 	if len(args) != 3 {
 		errorMsg := "incorrect-number-of-arguments-expecting-2"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[2])
+	err := utils.CheckAuth(args[2])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	return resources.SelectBusinessDataSetsPurchasedDownloaded(d.logger, stub, args[0], args[1])
+	return resources.SelectBusinessDataSetsPurchasedDownloaded(stub, args[0], args[1])
 }
 
 func (d *DataMarketplaceChaincode) selectBusinessDataSetsPurchasedDownloadedWithPagination(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 	// should receive 3 args and the authorization token
 	if len(args) != 4 {
 		errorMsg := "incorrect-number-of-arguments-expecting-4"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
-	err := utils.CheckAuth(d.logger, args[3])
+	err := utils.CheckAuth(args[3])
 	if err != nil {
 		errorMsg := "operation-not-authorized"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
 
 	pageSize, err := strconv.Atoi(args[2])
 	if err != nil {
 		errorMsg := "incorrect-page-size-format"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
-	return resources.SelectBusinessDataSetsPurchasedDownloadedWithPagination(d.logger, stub, args[0], args[1], int32(pageSize), args[3])
+	return resources.SelectBusinessDataSetsPurchasedDownloadedWithPagination(stub, args[0], args[1], int32(pageSize), args[3])
 }
 
 // =========================================================================================
@@ -1556,20 +1561,20 @@ func (d *DataMarketplaceChaincode) cleanUp(stub shim.ChaincodeStubInterface, arg
 
 	if len(args) != 0 {
 		errorMsg := "incorrect-number-of-arguments-expecting-0"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
-	return resources.CleanUp(d.logger, stub)
+	return resources.CleanUp(stub)
 }
 
 func (d *DataMarketplaceChaincode) deleteDoc(stub shim.ChaincodeStubInterface, args []string) pb.Response {
 
 	if len(args) != 1 {
 		errorMsg := "incorrect-number-of-arguments-expecting-1"
-		d.logger.Error(errorMsg)
+		logger.Error(errorMsg)
 		return shim.Error(errorMsg)
 	}
-	return resources.DeleteDoc(d.logger, stub, args[0])
+	return resources.DeleteDoc(stub, args[0])
 }
 
 // =========================================================================================
@@ -1577,9 +1582,9 @@ func (d *DataMarketplaceChaincode) deleteDoc(stub shim.ChaincodeStubInterface, a
 // =========================================================================================
 
 func main() {
-	logger := shim.NewLogger("data-marketplace-chaincode-logger")
+	
 
-	err := shim.Start(NewDataMarketplaceChaincode(logger))
+	err := shim.Start(NewDataMarketplaceChaincode())
 	if err != nil {
 		logger.Error(err.Error())
 		panic("error-starting-data-marketplace-chaincode:-" + err.Error())

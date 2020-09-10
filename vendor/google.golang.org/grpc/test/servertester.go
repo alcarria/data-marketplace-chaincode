@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+// Package test contains tests.
 package test
 
 import (
@@ -48,9 +49,8 @@ type serverTester struct {
 	hpackEnc  *hpack.Encoder
 
 	// reading frames:
-	frc       chan http2.Frame
-	frErrc    chan error
-	readTimer *time.Timer
+	frc    chan http2.Frame
+	frErrc chan error
 }
 
 func newServerTesterFromConn(t testing.TB, cc io.ReadWriteCloser) *serverTester {
@@ -138,6 +138,21 @@ func (st *serverTester) writeSettingsAck() {
 	}
 }
 
+func (st *serverTester) wantRSTStream(errCode http2.ErrCode) *http2.RSTStreamFrame {
+	f, err := st.readFrame()
+	if err != nil {
+		st.t.Fatalf("Error while expecting an RST frame: %v", err)
+	}
+	sf, ok := f.(*http2.RSTStreamFrame)
+	if !ok {
+		st.t.Fatalf("got a %T; want *http2.RSTStreamFrame", f)
+	}
+	if sf.ErrCode != errCode {
+		st.t.Fatalf("expected RST error code '%v', got '%v'", errCode.String(), sf.ErrCode.String())
+	}
+	return sf
+}
+
 func (st *serverTester) wantSettings() *http2.SettingsFrame {
 	f, err := st.readFrame()
 	if err != nil {
@@ -148,20 +163,6 @@ func (st *serverTester) wantSettings() *http2.SettingsFrame {
 		st.t.Fatalf("got a %T; want *SettingsFrame", f)
 	}
 	return sf
-}
-
-func (st *serverTester) wantSettingsAck() {
-	f, err := st.readFrame()
-	if err != nil {
-		st.t.Fatal(err)
-	}
-	sf, ok := f.(*http2.SettingsFrame)
-	if !ok {
-		st.t.Fatalf("Wanting a settings ACK, received a %T", f)
-	}
-	if !sf.IsAck() {
-		st.t.Fatal("Settings Frame didn't have ACK set")
-	}
 }
 
 // wait for any activity from the server
@@ -241,7 +242,7 @@ func (st *serverTester) encodeHeader(headers ...string) []byte {
 	return st.headerBuf.Bytes()
 }
 
-func (st *serverTester) writeHeadersGRPC(streamID uint32, path string) {
+func (st *serverTester) writeHeadersGRPC(streamID uint32, path string, endStream bool) {
 	st.writeHeaders(http2.HeadersFrameParam{
 		StreamID: streamID,
 		BlockFragment: st.encodeHeader(
@@ -250,7 +251,7 @@ func (st *serverTester) writeHeadersGRPC(streamID uint32, path string) {
 			"content-type", "application/grpc",
 			"te", "trailers",
 		),
-		EndStream:  false,
+		EndStream:  endStream,
 		EndHeaders: true,
 	})
 }
@@ -270,11 +271,5 @@ func (st *serverTester) writeData(streamID uint32, endStream bool, data []byte) 
 func (st *serverTester) writeRSTStream(streamID uint32, code http2.ErrCode) {
 	if err := st.fr.WriteRSTStream(streamID, code); err != nil {
 		st.t.Fatalf("Error writing RST_STREAM: %v", err)
-	}
-}
-
-func (st *serverTester) writeDataPadded(streamID uint32, endStream bool, data, padding []byte) {
-	if err := st.fr.WriteDataPadded(streamID, endStream, data, padding); err != nil {
-		st.t.Fatalf("Error writing DATA with padding: %v", err)
 	}
 }

@@ -20,17 +20,18 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
 	"os"
 	"time"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/channelz/service"
-	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	"google.golang.org/grpc/resolver"
 	"google.golang.org/grpc/resolver/manual"
+
+	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 )
 
 const (
@@ -50,10 +51,9 @@ func main() {
 	defer s.Stop()
 
 	/***** Initialize manual resolver and Dial *****/
-	r, rcleanup := manual.GenerateAndRegisterManualResolver()
-	defer rcleanup()
+	r := manual.NewBuilderWithScheme("whatever")
 	// Set up a connection to the server.
-	conn, err := grpc.Dial(r.Scheme()+":///test.server", grpc.WithInsecure(), grpc.WithBalancerName("round_robin"))
+	conn, err := grpc.Dial(r.Scheme()+":///test.server", grpc.WithInsecure(), grpc.WithResolvers(r), grpc.WithDefaultServiceConfig(`{"loadBalancingPolicy":"round_robin"}`))
 	if err != nil {
 		log.Fatalf("did not connect: %v", err)
 	}

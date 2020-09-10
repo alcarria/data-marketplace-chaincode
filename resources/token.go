@@ -8,8 +8,8 @@ package resources
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/hyperledger/fabric/core/chaincode/shim"
+        logger "github.com/sirupsen/logrus"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
 )
 
 type Token struct {
@@ -19,11 +19,11 @@ type Token struct {
 	RemainingSupply   float64 `json:"remainingSupply"`
 }
 
-func NewToken(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, id string) (Token, error) {
-	return NewTokenWithSupply(logger, stub, id, 0.0)
+func NewToken(stub shim.ChaincodeStubInterface, id string) (Token, error) {
+	return NewTokenWithSupply(stub, id, 0.0)
 }
 
-func NewTokenWithSupply(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, id string, ts float64) (Token, error) {
+func NewTokenWithSupply(stub shim.ChaincodeStubInterface, id string, ts float64) (Token, error) {
 	if ts < 0 {
 		return Token{}, fmt.Errorf("error-token-totalTokensSupply-should-be-pausitive")
 	}
@@ -45,7 +45,7 @@ func NewTokenWithSupply(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInt
 		TotalTokensSupply: ts,
 		RemainingSupply:   ts,
 	}
-	err = SetTokenState(logger, stub, token)
+	err = SetTokenState(stub, token)
 	if err != nil {
 		logger.Error(err.Error())
 		return Token{}, err
@@ -54,10 +54,10 @@ func NewTokenWithSupply(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInt
 	return token, nil
 }
 
-func (t *Token) TotalSupply(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) (float64, error) {
+func (t *Token) TotalSupply(stub shim.ChaincodeStubInterface) (float64, error) {
 	logger.Info("entering-token-TotalSupply")
 	defer logger.Info("exiting-token-TotalSupply")
-	token, err := GetTokenState(logger, stub, t.ID)
+	token, err := GetTokenState(stub, t.ID)
 	if err != nil {
 		logger.Error(err.Error())
 		return 0, err
@@ -66,10 +66,10 @@ func (t *Token) TotalSupply(logger *shim.ChaincodeLogger, stub shim.ChaincodeStu
 	return token.TotalTokensSupply, nil
 }
 
-func (t *Token) AvailableSupply(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) (float64, error) {
+func (t *Token) AvailableSupply(stub shim.ChaincodeStubInterface) (float64, error) {
 	logger.Info("entering-token-AvailableSupply")
 	defer logger.Info("exiting-token-AvailableSupply")
-	token, err := GetTokenState(logger, stub, t.ID)
+	token, err := GetTokenState(stub, t.ID)
 	if err != nil {
 		logger.Error(err.Error())
 		return 0, err
@@ -78,10 +78,10 @@ func (t *Token) AvailableSupply(logger *shim.ChaincodeLogger, stub shim.Chaincod
 	return token.RemainingSupply, nil
 }
 
-func (t *Token) SetAccountBalance(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, account Account, tokens float64) (bool, error) {
+func (t *Token) SetAccountBalance(stub shim.ChaincodeStubInterface, account Account, tokens float64) (bool, error) {
 	logger.Info("entering-token-SetAccountBalance")
 	defer logger.Info("exiting-token-SetAccountBalance")
-	token, err := GetTokenState(logger, stub, t.ID)
+	token, err := GetTokenState(stub, t.ID)
 	if err != nil {
 		logger.Error(err.Error())
 		return false, err
@@ -91,13 +91,13 @@ func (t *Token) SetAccountBalance(logger *shim.ChaincodeLogger, stub shim.Chainc
 		return false, fmt.Errorf("error-transfer-amount-greater-then-remaining-supply")
 	}
 
-	account, err = GetAccountState(logger, stub, account.ID)
+	account, err = GetAccountState(stub, account.ID)
 	if err != nil {
 		logger.Error(err.Error())
 		return false, err
 	}
 
-	_, err = account.SetBalance(logger, stub, tokens)
+	_, err = account.SetBalance(stub, tokens)
 	if err != nil {
 		logger.Error(err.Error())
 		return false, err
@@ -105,7 +105,7 @@ func (t *Token) SetAccountBalance(logger *shim.ChaincodeLogger, stub shim.Chainc
 
 	token.RemainingSupply = token.RemainingSupply - tokens
 
-	err = SetTokenState(logger, stub, token)
+	err = SetTokenState(stub, token)
 	if err != nil {
 		logger.Error(err.Error())
 		return false, err
@@ -114,7 +114,7 @@ func (t *Token) SetAccountBalance(logger *shim.ChaincodeLogger, stub shim.Chainc
 	return true, nil
 }
 
-func GetTokenState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, id string) (Token, error) {
+func GetTokenState(stub shim.ChaincodeStubInterface, id string) (Token, error) {
 	logger.Info("entering-get-tokenState")
 	defer logger.Info("exiting-get-tokenState")
 
@@ -136,7 +136,7 @@ func GetTokenState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterfac
 		return Token{}, fmt.Errorf(respMsg)
 	}
 
-	err = token.checkAttributes(logger)
+	err = token.checkAttributes()
 	if err != nil {
 		logger.Error(err.Error())
 		return Token{}, err
@@ -144,7 +144,7 @@ func GetTokenState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterfac
 	return token, nil
 }
 
-func SetTokenState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, token Token) error {
+func SetTokenState(stub shim.ChaincodeStubInterface, token Token) error {
 	logger.Info("entering-set-tokenState")
 	defer logger.Info("exiting-set-tokenState")
 	tokenBytes, err := json.Marshal(token)
@@ -163,7 +163,7 @@ func SetTokenState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterfac
 	return nil
 }
 
-func (t *Token) checkAttributes(logger *shim.ChaincodeLogger) error {
+func (t *Token) checkAttributes() error {
 	logger.Info("entering-checkAttributes-token")
 	defer logger.Info("exiting-checkAttributes-token")
 

@@ -20,34 +20,68 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"net"
+	"strings"
 
-	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/alts"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/interop"
 	testpb "google.golang.org/grpc/interop/grpc_testing"
+	"google.golang.org/grpc/tap"
+)
+
+const (
+	udsAddrPrefix = "unix:"
 )
 
 var (
 	hsAddr     = flag.String("alts_handshaker_service_address", "", "ALTS handshaker gRPC service address")
-	serverAddr = flag.String("server_address", ":8080", "The port on which the server is listening")
+	serverAddr = flag.String("server_address", ":8080", "The address on which the server is listening. Only two types of addresses are supported, 'host:port' and 'unix:/path'.")
+
+	logger = grpclog.Component("interop")
 )
 
 func main() {
 	flag.Parse()
 
-	lis, err := net.Listen("tcp", *serverAddr)
+	// If the server address starts with `unix:`, then we have a UDS address.
+	network := "tcp"
+	address := *serverAddr
+	if strings.HasPrefix(address, udsAddrPrefix) {
+		network = "unix"
+		address = strings.TrimPrefix(address, udsAddrPrefix)
+	}
+	lis, err := net.Listen(network, address)
 	if err != nil {
-		grpclog.Fatalf("gRPC Server: failed to start the server at %v: %v", *serverAddr, err)
+		logger.Fatalf("gRPC Server: failed to start the server at %v: %v", address, err)
 	}
 	opts := alts.DefaultServerOptions()
 	if *hsAddr != "" {
 		opts.HandshakerServiceAddress = *hsAddr
 	}
 	altsTC := alts.NewServerCreds(opts)
-	grpcServer := grpc.NewServer(grpc.Creds(altsTC))
-	testpb.RegisterTestServiceServer(grpcServer, interop.NewTestServer())
+	grpcServer := grpc.NewServer(grpc.Creds(altsTC), grpc.InTapHandle(authz))
+	testpb.RegisterTestServiceService(grpcServer, interop.NewTestServer())
 	grpcServer.Serve(lis)
+}
+
+// authz shows how to access client information at the server side to perform
+// application-layer authorization checks.
+func authz(ctx context.Context, info *tap.Info) (context.Context, error) {
+	authInfo, err := alts.AuthInfoFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// Access all alts.AuthInfo data:
+	logger.Infof("authInfo.ApplicationProtocol() = %v", authInfo.ApplicationProtocol())
+	logger.Infof("authInfo.RecordProtocol() = %v", authInfo.RecordProtocol())
+	logger.Infof("authInfo.SecurityLevel() = %v", authInfo.SecurityLevel())
+	logger.Infof("authInfo.PeerServiceAccount() = %v", authInfo.PeerServiceAccount())
+	logger.Infof("authInfo.LocalServiceAccount() = %v", authInfo.LocalServiceAccount())
+	logger.Infof("authInfo.PeerRPCVersions() = %v", authInfo.PeerRPCVersions())
+	logger.Infof("info.FullMethodName = %v", info.FullMethodName)
+	return ctx, nil
 }

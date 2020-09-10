@@ -8,9 +8,9 @@ package resources
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/hyperledger/fabric/core/chaincode/shim"
-	pb "github.com/hyperledger/fabric/protos/peer"
+        logger "github.com/sirupsen/logrus"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 )
 
 type Review struct {
@@ -23,11 +23,11 @@ type Review struct {
 	DataContractTypeID string `json:"dataContractType"`
 }
 
-func SubmitReview(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, review Review) pb.Response {
+func SubmitReview(stub shim.ChaincodeStubInterface, review Review) pb.Response {
 	logger.Info("entering-submit-review")
 	defer logger.Info("exiting-submit-review")
 	// === Check that data is accurate
-	dataContractType, provider, err := review.checkAndGetAttributes(logger, stub)
+	dataContractType, provider, err := review.checkAndGetAttributes(stub)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -57,7 +57,7 @@ func SubmitReview(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface
 		return shim.Error(err.Error())
 	}
 
-	err = provider.AddReview(logger, stub, review)
+	err = provider.AddReview(stub, review)
 	if err != nil {
 		//TODO if anything fails undo
 		//stub.DelState(review.ID)
@@ -65,9 +65,9 @@ func SubmitReview(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface
 		return shim.Error(err.Error())
 	}
 
-	err = dataContractType.AddReview(logger, stub, review)
+	err = dataContractType.AddReview(stub, review)
 	if err != nil {
-		//provider.RemoveReview(logger, stub, review)
+		//provider.RemoveReview(stub, review)
 		//stub.DelState(review.ID)
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -76,11 +76,11 @@ func SubmitReview(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface
 	return shim.Success(nil)
 }
 
-func GetReview(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, id string) pb.Response {
+func GetReview(stub shim.ChaincodeStubInterface, id string) pb.Response {
 	logger.Info("entering-get-review")
 	defer logger.Info("exiting-get-review")
 
-	reviewAsBytes, err := GetReviewState(logger, stub, id)
+	reviewAsBytes, err := GetReviewState(stub, id)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -89,7 +89,7 @@ func GetReview(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, i
 	return shim.Success(reviewAsBytes)
 }
 
-func GetReviewState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, id string) ([]byte, error) {
+func GetReviewState(stub shim.ChaincodeStubInterface, id string) ([]byte, error) {
 	logger.Info("entering-get-review-state")
 	defer logger.Info("exiting-get-review-state")
 	reviewAsbytes, err := stub.GetState(id) //get the reviewAsbytes from chaincode state
@@ -124,7 +124,7 @@ func GetReviewState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterfa
 	return reviewAsbytes, nil
 }
 
-func (r *Review) checkAndGetAttributes(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) (DataContractType, Business, error) {
+func (r *Review) checkAndGetAttributes(stub shim.ChaincodeStubInterface) (DataContractType, Business, error) {
 	logger.Info("entering-checkAttributes-review")
 	defer logger.Info("exiting-checkAttributes-review")
 
@@ -140,13 +140,13 @@ func (r *Review) checkAndGetAttributes(logger *shim.ChaincodeLogger, stub shim.C
 
 	}
 
-	_, err := GetBusinessState(logger, stub, r.ReviewerID)
+	_, err := GetBusinessState(stub, r.ReviewerID)
 	if err != nil {
 		logger.Error(err.Error())
 		return DataContractType{}, Business{}, err
 	}
 
-	dataContractAsBytes, err := GetDataContractState(logger, stub, r.DataContractID)
+	dataContractAsBytes, err := GetDataContractState(stub, r.DataContractID)
 	if err != nil {
 		logger.Error(err.Error())
 		return DataContractType{}, Business{}, err
@@ -158,7 +158,7 @@ func (r *Review) checkAndGetAttributes(logger *shim.ChaincodeLogger, stub shim.C
 		return DataContractType{}, Business{}, err
 	}
 
-	dataContractTypeAsBytes, err := GetDataContractTypeState(logger, stub, dataContract.DataContractTypeID)
+	dataContractTypeAsBytes, err := GetDataContractTypeState(stub, dataContract.DataContractTypeID)
 	if err != nil {
 		logger.Error(err.Error())
 		return DataContractType{}, Business{}, err
@@ -171,7 +171,7 @@ func (r *Review) checkAndGetAttributes(logger *shim.ChaincodeLogger, stub shim.C
 		return DataContractType{}, Business{}, err
 	}
 
-	providerAsBytes, err := GetBusinessState(logger, stub, dataContractType.ProviderID)
+	providerAsBytes, err := GetBusinessState(stub, dataContractType.ProviderID)
 	if err != nil {
 		logger.Error(err.Error())
 		return DataContractType{}, Business{}, err

@@ -8,8 +8,8 @@ package resources_test
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/hyperledger/fabric/core/chaincode/shim"
+        //logger "github.com/sirupsen/logrus"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/lgsvl/data-marketplace-chaincode/fakes"
 	"github.com/lgsvl/data-marketplace-chaincode/resources"
 	. "github.com/onsi/ginkgo"
@@ -19,19 +19,16 @@ import (
 var _ = Describe("Account", func() {
 	var (
 		fakeStub *fakes.ChaincodeStub
-		logger   *shim.ChaincodeLogger
 		account  resources.Account
 	)
 	BeforeEach(func() {
-		logger = shim.NewLogger("account-test-logger")
 		fakeStub = new(fakes.ChaincodeStub)
-
 	})
 
 	Context(".CreateAccount", func() {
 		It("should fail when DocType does not correspond to account DocType", func() {
 			account = resources.Account{DocType: "fake-docType"}
-			response := resources.CreateAccount(logger, fakeStub, account)
+			response := resources.CreateAccount(fakeStub, account)
 			errMsg := fmt.Sprintf("error-docType-does-not-match-fake-docType-vs-%s", resources.ACCOUNT_DOCTYPE)
 			Expect(response.Message).To(Equal(errMsg))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -43,7 +40,7 @@ var _ = Describe("Account", func() {
 				ID:      "fake-account",
 			}
 			fakeStub.GetStateReturns(nil, fmt.Errorf("fake-error"))
-			response := resources.CreateAccount(logger, fakeStub, account)
+			response := resources.CreateAccount(fakeStub, account)
 			Expect(response.Message).To(Equal("failed-to-get-account-fake-error"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
 			Expect(fakeStub.GetStateCallCount()).To(Equal(1))
@@ -60,7 +57,7 @@ var _ = Describe("Account", func() {
 
 			fakeStub.GetStateReturns(accountBytes, nil)
 
-			response := resources.CreateAccount(logger, fakeStub, account)
+			response := resources.CreateAccount(fakeStub, account)
 			Expect(response.Message).To(Equal("this-account-already-exists-fake-account"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
 			Expect(fakeStub.GetStateCallCount()).To(Equal(1))
@@ -76,7 +73,7 @@ var _ = Describe("Account", func() {
 			fakeStub.GetStateReturns(nil, nil)
 			fakeStub.PutStateReturns(fmt.Errorf("error-put-Account"))
 
-			response := resources.CreateAccount(logger, fakeStub, account)
+			response := resources.CreateAccount(fakeStub, account)
 			Expect(response.Message).To(Equal("failed-to-update-account-error-put-Account"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
 			Expect(fakeStub.GetStateCallCount()).To(Equal(1))
@@ -93,7 +90,7 @@ var _ = Describe("Account", func() {
 			fakeStub.GetStateReturns(nil, nil)
 			fakeStub.PutStateReturns(nil)
 
-			response := resources.CreateAccount(logger, fakeStub, account)
+			response := resources.CreateAccount(fakeStub, account)
 			Expect(response.Message).To(Equal(""))
 			Expect(response.Status).To(Equal(int32(shim.OK)))
 
@@ -118,7 +115,7 @@ var _ = Describe("Account", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(accountBytes, fmt.Errorf("fake-error"))
-			response := resources.GetAccount(logger, fakeStub, "fake-account")
+			response := resources.GetAccount(fakeStub, "fake-account")
 
 			errorMsg := fmt.Sprintf("error-failed-to-get-state-for-fake-account")
 			Expect(response.Message).To(Equal(errorMsg))
@@ -135,7 +132,7 @@ var _ = Describe("Account", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(accountBytes, nil)
-			response := resources.GetAccount(logger, fakeStub, "fake-account")
+			response := resources.GetAccount(fakeStub, "fake-account")
 
 			Expect(response.Message).To(Equal(""))
 			Expect(response.Status).To(Equal(int32(shim.OK)))
@@ -147,7 +144,7 @@ var _ = Describe("Account", func() {
 	Context(".GetAccountState", func() {
 		It("should fail when stub fails to get account state", func() {
 			fakeStub.GetStateReturns(nil, fmt.Errorf("error-getting-account"))
-			_, err := resources.GetAccountState(logger, fakeStub, "fake-account")
+			_, err := resources.GetAccountState(fakeStub, "fake-account")
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-failed-to-get-state-for-fake-account"))
@@ -156,7 +153,7 @@ var _ = Describe("Account", func() {
 
 		It("should fail when stub returns nil to get Account state", func() {
 			fakeStub.GetStateReturns(nil, nil)
-			_, err := resources.GetAccountState(logger, fakeStub, "fake-account")
+			_, err := resources.GetAccountState(fakeStub, "fake-account")
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-account-does-not-exist-fake-account"))
@@ -165,7 +162,7 @@ var _ = Describe("Account", func() {
 
 		It("should fail when json unmarshalling fails for Account state", func() {
 			fakeStub.GetStateReturns([]byte("fake-json"), nil)
-			_, err := resources.GetAccountState(logger, fakeStub, "fake-account")
+			_, err := resources.GetAccountState(fakeStub, "fake-account")
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-unmarshalling-fake-account"))
@@ -181,7 +178,7 @@ var _ = Describe("Account", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(accountBytes, nil)
-			account, err = resources.GetAccountState(logger, fakeStub, "fake-account")
+			account, err = resources.GetAccountState(fakeStub, "fake-account")
 
 			Expect(err).To(HaveOccurred())
 			errorMsg := fmt.Sprintf("error-docType-does-not-match-%s-vs-%s", resources.PERSON_DOCTYPE, resources.ACCOUNT_DOCTYPE)
@@ -198,7 +195,7 @@ var _ = Describe("Account", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(accountBytes, nil)
-			account, err = resources.GetAccountState(logger, fakeStub, "fake-account")
+			account, err = resources.GetAccountState(fakeStub, "fake-account")
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeStub.GetStateCallCount()).To(Equal(1))
@@ -215,7 +212,7 @@ var _ = Describe("Account", func() {
 			}
 
 			fakeStub.PutStateReturns(fmt.Errorf("fake-error"))
-			err := resources.SetAccountState(logger, fakeStub, account)
+			err := resources.SetAccountState(fakeStub, account)
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("failed-to-update-account-fake-error"))
@@ -229,7 +226,7 @@ var _ = Describe("Account", func() {
 			}
 
 			fakeStub.PutStateReturns(nil)
-			err := resources.SetAccountState(logger, fakeStub, account)
+			err := resources.SetAccountState(fakeStub, account)
 
 			Expect(err).NotTo(HaveOccurred())
 
@@ -250,7 +247,7 @@ var _ = Describe("Account", func() {
 		It("should fail when stub fails to get  account", func() {
 			fakeStub.GetStateReturns(nil, fmt.Errorf("fake-error"))
 
-			_, err := resources.BalanceOf(logger, fakeStub, account)
+			_, err := resources.BalanceOf(fakeStub, account)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-failed-to-get-state-for-fake-account"))
 		})
@@ -261,7 +258,7 @@ var _ = Describe("Account", func() {
 
 			fakeStub.GetStateReturns(accountBytes, nil)
 
-			balance, err := resources.BalanceOf(logger, fakeStub, account)
+			balance, err := resources.BalanceOf(fakeStub, account)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(balance).To(Equal(100.0))
 		})
@@ -281,7 +278,7 @@ var _ = Describe("Account", func() {
 		It("should fail when stub fails to get owner account", func() {
 			fakeStub.GetStateReturnsOnCall(0, nil, fmt.Errorf("fake-error"))
 
-			_, err := resources.Approve(logger, fakeStub, owner.ID, spender.ID, 10)
+			_, err := resources.Approve(fakeStub, owner.ID, spender.ID, 10)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-failed-to-get-state-for-fake-owner"))
 		})
@@ -293,7 +290,7 @@ var _ = Describe("Account", func() {
 
 			fakeStub.GetStateReturns(ownerBytes, nil)
 
-			_, err = resources.Approve(logger, fakeStub, owner.ID, spender.ID, 15)
+			_, err = resources.Approve(fakeStub, owner.ID, spender.ID, 15)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("no-enough-funds-to-fulfill-allowances"))
 		})
@@ -307,7 +304,7 @@ var _ = Describe("Account", func() {
 			fakeStub.GetStateReturnsOnCall(0, ownerBytes, nil)
 			fakeStub.GetStateReturnsOnCall(1, nil, fmt.Errorf("fake-error"))
 
-			_, err = resources.Approve(logger, fakeStub, owner.ID, spender.ID, 10)
+			_, err = resources.Approve(fakeStub, owner.ID, spender.ID, 10)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-failed-to-get-state-for-fake-spender"))
 		})
@@ -324,7 +321,7 @@ var _ = Describe("Account", func() {
 			fakeStub.GetStateReturnsOnCall(1, spenderBytes, nil)
 			fakeStub.PutStateReturns(fmt.Errorf("fake-error"))
 
-			_, err = resources.Approve(logger, fakeStub, owner.ID, spender.ID, 10)
+			_, err = resources.Approve(fakeStub, owner.ID, spender.ID, 10)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("failed-to-update-account-fake-error"))
 		})
@@ -341,7 +338,7 @@ var _ = Describe("Account", func() {
 			fakeStub.GetStateReturnsOnCall(1, spenderBytes, nil)
 			fakeStub.PutStateReturns(nil)
 
-			success, err := resources.Approve(logger, fakeStub, owner.ID, spender.ID, 10)
+			success, err := resources.Approve(fakeStub, owner.ID, spender.ID, 10)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(success).To(BeTrue())
 		})
@@ -363,7 +360,7 @@ var _ = Describe("Account", func() {
 		It("should fail when stub fails to get owner account", func() {
 			fakeStub.GetStateReturns(nil, fmt.Errorf("fake-error"))
 
-			_, err := resources.Allowance(logger, fakeStub, owner, spender)
+			_, err := resources.Allowance(fakeStub, owner, spender)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-failed-to-get-state-for-fake-owner"))
 		})
@@ -374,7 +371,7 @@ var _ = Describe("Account", func() {
 
 			fakeStub.GetStateReturns(accountBytes, nil)
 
-			allowance, err := resources.Allowance(logger, fakeStub, owner, spender)
+			allowance, err := resources.Allowance(fakeStub, owner, spender)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(allowance).To(Equal(0.0))
 		})
@@ -385,7 +382,7 @@ var _ = Describe("Account", func() {
 
 			fakeStub.GetStateReturns(accountBytes, nil)
 
-			allowance, err := resources.Allowance(logger, fakeStub, owner, spender)
+			allowance, err := resources.Allowance(fakeStub, owner, spender)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(allowance).To(Equal(0.0))
 		})
@@ -396,7 +393,7 @@ var _ = Describe("Account", func() {
 
 			fakeStub.GetStateReturns(accountBytes, nil)
 
-			allowance, err := resources.Allowance(logger, fakeStub, owner, spender)
+			allowance, err := resources.Allowance(fakeStub, owner, spender)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(allowance).To(Equal(10.0))
 		})
@@ -415,7 +412,7 @@ var _ = Describe("Account", func() {
 
 		It("should fail when stub fails to get source account", func() {
 			fakeStub.GetStateReturns(nil, fmt.Errorf("fake-error"))
-			_, err := resources.TransferFrom(logger, fakeStub, source.ID, destination.ID, 100.0)
+			_, err := resources.TransferFrom(fakeStub, source.ID, destination.ID, 100.0)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-failed-to-get-state-for-fake-source"))
 
@@ -428,7 +425,7 @@ var _ = Describe("Account", func() {
 			fakeStub.GetStateReturnsOnCall(0, sourceBytes, nil)
 			fakeStub.GetStateReturnsOnCall(1, nil, fmt.Errorf("fake-error"))
 
-			_, err = resources.TransferFrom(logger, fakeStub, source.ID, destination.ID, 100.0)
+			_, err = resources.TransferFrom(fakeStub, source.ID, destination.ID, 100.0)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-failed-to-get-state-for-fake-destination"))
 
@@ -443,7 +440,7 @@ var _ = Describe("Account", func() {
 			fakeStub.GetStateReturnsOnCall(0, sourceBytes, nil)
 			fakeStub.GetStateReturnsOnCall(1, destinationBytes, nil)
 
-			_, err = resources.TransferFrom(logger, fakeStub, source.ID, destination.ID, 100.0)
+			_, err = resources.TransferFrom(fakeStub, source.ID, destination.ID, 100.0)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("no-enough-allowance-to-transfer"))
 
@@ -460,7 +457,7 @@ var _ = Describe("Account", func() {
 			fakeStub.GetStateReturnsOnCall(0, sourceBytes, nil)
 			fakeStub.GetStateReturnsOnCall(1, destinationBytes, nil)
 
-			_, err = resources.TransferFrom(logger, fakeStub, source.ID, destination.ID, 100.0)
+			_, err = resources.TransferFrom(fakeStub, source.ID, destination.ID, 100.0)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("no-enough-allowance-to-transfer"))
 		})
@@ -477,7 +474,7 @@ var _ = Describe("Account", func() {
 			fakeStub.GetStateReturnsOnCall(1, destinationBytes, nil)
 
 			fakeStub.PutStateReturnsOnCall(0, fmt.Errorf("fake-error"))
-			_, err = resources.TransferFrom(logger, fakeStub, source.ID, destination.ID, 10)
+			_, err = resources.TransferFrom(fakeStub, source.ID, destination.ID, 10)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("failed-to-update-account-fake-error"))
 		})
@@ -496,7 +493,7 @@ var _ = Describe("Account", func() {
 			fakeStub.PutStateReturnsOnCall(0, nil)
 			fakeStub.PutStateReturnsOnCall(1, fmt.Errorf("fake-error"))
 
-			_, err = resources.TransferFrom(logger, fakeStub, source.ID, destination.ID, 10)
+			_, err = resources.TransferFrom(fakeStub, source.ID, destination.ID, 10)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("failed-to-update-account-fake-error"))
 		})
@@ -517,7 +514,7 @@ var _ = Describe("Account", func() {
 			fakeStub.PutStateReturnsOnCall(2, fmt.Errorf("fake-error"))
 			fakeStub.PutStateReturnsOnCall(3, nil)
 
-			_, err = resources.TransferFrom(logger, fakeStub, source.ID, destination.ID, 100.0)
+			_, err = resources.TransferFrom(fakeStub, source.ID, destination.ID, 100.0)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("failed-to-update-account-fake-error"))
 		})
@@ -535,7 +532,7 @@ var _ = Describe("Account", func() {
 			fakeStub.GetStateReturnsOnCall(1, destinationBytes, nil)
 			fakeStub.PutStateReturns(nil)
 
-			success, err := resources.TransferFrom(logger, fakeStub, source.ID, destination.ID, 100.0)
+			success, err := resources.TransferFrom(fakeStub, source.ID, destination.ID, 100.0)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(success).To(BeTrue())
 		})
@@ -554,14 +551,14 @@ var _ = Describe("Account", func() {
 
 		It("should fail when stub fails to update account state", func() {
 			fakeStub.PutStateReturns(fmt.Errorf("fake-error"))
-			newAllowance, err := source.ReduceAllowance(logger, fakeStub, destination.ID, 10)
+			newAllowance, err := source.ReduceAllowance(fakeStub, destination.ID, 10)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("failed-to-update-account-fake-error"))
 			Expect(newAllowance).To(Equal(10.0))
 		})
 
 		It("should return 0 if there are no allowances", func() {
-			newAllowance, err := source.ReduceAllowance(logger, fakeStub, destination.ID, 6)
+			newAllowance, err := source.ReduceAllowance(fakeStub, destination.ID, 6)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(newAllowance).To(Equal(4.0))
 		})
@@ -577,14 +574,14 @@ var _ = Describe("Account", func() {
 
 		It("should fail when stub fails to update account state", func() {
 			fakeStub.PutStateReturns(fmt.Errorf("fake-error"))
-			newBalance, err := account.SetBalance(logger, fakeStub, 10)
+			newBalance, err := account.SetBalance(fakeStub, 10)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("failed-to-update-account-fake-error"))
 			Expect(newBalance).To(Equal(5.0))
 		})
 
 		It("should succeed and return new balance", func() {
-			newBalance, err := account.SetBalance(logger, fakeStub, 6)
+			newBalance, err := account.SetBalance(fakeStub, 6)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(newBalance).To(Equal(6.0))
 		})
@@ -600,14 +597,14 @@ var _ = Describe("Account", func() {
 
 		It("should fail when stub fails to update account state", func() {
 			fakeStub.PutStateReturns(fmt.Errorf("fake-error"))
-			newBalance, err := account.AddFunds(logger, fakeStub, 10)
+			newBalance, err := account.AddFunds(fakeStub, 10)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("failed-to-update-account-fake-error"))
 			Expect(newBalance).To(Equal(5.0))
 		})
 
 		It("should return 0 if there are no allowances", func() {
-			newBalance, err := account.AddFunds(logger, fakeStub, 6)
+			newBalance, err := account.AddFunds(fakeStub, 6)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(newBalance).To(Equal(11.0))
 		})
@@ -622,7 +619,7 @@ var _ = Describe("Account", func() {
 		})
 
 		It("should fail when there are no enough funds", func() {
-			newBalance, err := account.RetrieveFunds(logger, fakeStub, 10)
+			newBalance, err := account.RetrieveFunds(fakeStub, 10)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("no-enough-funds-to-retrieve"))
 			Expect(newBalance).To(Equal(5.0))
@@ -630,14 +627,14 @@ var _ = Describe("Account", func() {
 
 		It("should fail when stub fails to update account state", func() {
 			fakeStub.PutStateReturns(fmt.Errorf("fake-error"))
-			newBalance, err := account.RetrieveFunds(logger, fakeStub, 2)
+			newBalance, err := account.RetrieveFunds(fakeStub, 2)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("failed-to-update-account-fake-error"))
 			Expect(newBalance).To(Equal(5.0))
 		})
 
 		It("should succeed and returns new balance", func() {
-			newBalance, err := account.RetrieveFunds(logger, fakeStub, 2)
+			newBalance, err := account.RetrieveFunds(fakeStub, 2)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(newBalance).To(Equal(3.0))
 		})

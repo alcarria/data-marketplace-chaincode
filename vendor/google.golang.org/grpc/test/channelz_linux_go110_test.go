@@ -1,4 +1,4 @@
-// +build go1.10,linux,!appengine
+// +build linux
 
 /*
  *
@@ -40,9 +40,10 @@ func (s) TestCZSocketMetricsSocketOption(t *testing.T) {
 }
 
 func testCZSocketMetricsSocketOption(t *testing.T, e env) {
-	channelz.NewChannelzStorage()
+	czCleanup := channelz.NewChannelzStorage()
+	defer czCleanupWrapper(czCleanup, t)
 	te := newTest(t, e)
-	te.startServer(&testServer{security: e.security})
+	te.startServer((&testServer{security: e.security}).Svc())
 	defer te.tearDown()
 	cc := te.clientConn()
 	tc := testpb.NewTestServiceClient(cc)

@@ -20,34 +20,29 @@
 package main
 
 import (
+	"context"
 	"log"
 	"net"
 	"time"
 
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/channelz/service"
-	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	"google.golang.org/grpc/internal/grpcrand"
+
+	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 )
 
 var (
 	ports = []string{":10001", ":10002", ":10003"}
 )
 
-// server is used to implement helloworld.GreeterServer.
-type server struct{}
-
-// SayHello implements helloworld.GreeterServer
-func (s *server) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+// sayHello implements helloworld.GreeterServer.SayHello
+func sayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
 	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
 }
 
-// slow server is used to simulate a server that has a variable delay in its response.
-type slowServer struct{}
-
-// SayHello implements helloworld.GreeterServer
-func (s *slowServer) SayHello(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
+// sayHelloSlow implements helloworld.GreeterServer.SayHello
+func sayHelloSlow(ctx context.Context, in *pb.HelloRequest) (*pb.HelloReply, error) {
 	// Delay 100ms ~ 200ms before replying
 	time.Sleep(time.Duration(100+grpcrand.Intn(100)) * time.Millisecond)
 	return &pb.HelloReply{Message: "Hello " + in.Name}, nil
@@ -65,7 +60,7 @@ func main() {
 	go s.Serve(lis)
 	defer s.Stop()
 
-	/***** Start three GreeterServers(with one of them to be the slowServer). *****/
+	/***** Start three GreeterServers(with one of them to be the slow server). *****/
 	for i := 0; i < 3; i++ {
 		lis, err := net.Listen("tcp", ports[i])
 		if err != nil {
@@ -74,9 +69,9 @@ func main() {
 		defer lis.Close()
 		s := grpc.NewServer()
 		if i == 2 {
-			pb.RegisterGreeterServer(s, &slowServer{})
+			pb.RegisterGreeterService(s, &pb.GreeterService{SayHello: sayHelloSlow})
 		} else {
-			pb.RegisterGreeterServer(s, &server{})
+			pb.RegisterGreeterService(s, &pb.GreeterService{SayHello: sayHello})
 		}
 		go s.Serve(lis)
 	}

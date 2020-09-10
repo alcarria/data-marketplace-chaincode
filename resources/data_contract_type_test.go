@@ -8,8 +8,8 @@ package resources_test
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/hyperledger/fabric/core/chaincode/shim"
+        //logger "github.com/sirupsen/logrus"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/lgsvl/data-marketplace-chaincode/fakes"
 	"github.com/lgsvl/data-marketplace-chaincode/resources"
 	. "github.com/onsi/ginkgo"
@@ -19,12 +19,10 @@ import (
 var _ = Describe("DataContractType", func() {
 	var (
 		fakeStub         *fakes.ChaincodeStub
-		logger           *shim.ChaincodeLogger
 		dataContractType resources.DataContractType
 		extras           resources.ContractTypeExtras
 	)
 	BeforeEach(func() {
-		logger = shim.NewLogger("data-contract-type-test-logger")
 		fakeStub = new(fakes.ChaincodeStub)
 
 	})
@@ -32,7 +30,7 @@ var _ = Describe("DataContractType", func() {
 	Context(".CreateDataContractType", func() {
 		It("should fail when DocType does not correspond to dataContractType DocType", func() {
 			dataContractType = resources.DataContractType{DocType: "fake-docType"}
-			response := resources.CreateDataContractType(logger, fakeStub, dataContractType)
+			response := resources.CreateDataContractType(fakeStub, dataContractType)
 			errMsg := fmt.Sprintf("error-docType-does-not-match-fake-docType-vs-%s", resources.DATA_CONTRACT_TYPE_DOCTYPE)
 			Expect(response.Message).To(Equal(errMsg))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -49,7 +47,7 @@ var _ = Describe("DataContractType", func() {
 				Extras:   extras,
 			}
 
-			response := resources.CreateDataContractType(logger, fakeStub, dataContractType)
+			response := resources.CreateDataContractType(fakeStub, dataContractType)
 			Expect(response.Message).To(Equal("error-stream-source-endpoint-is-required"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
 		})
@@ -62,7 +60,7 @@ var _ = Describe("DataContractType", func() {
 			}
 			fakeStub.GetStateReturnsOnCall(0, nil, fmt.Errorf("fake-error"))
 
-			response := resources.CreateDataContractType(logger, fakeStub, dataContractType)
+			response := resources.CreateDataContractType(fakeStub, dataContractType)
 			Expect(response.Message).To(Equal("error-failed-to-get-state-for-fake-category"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
 			Expect(fakeStub.GetStateCallCount()).To(Equal(1))
@@ -87,7 +85,7 @@ var _ = Describe("DataContractType", func() {
 			fakeStub.GetStateReturnsOnCall(0, dataCategoryBytes, nil)
 			fakeStub.GetStateReturnsOnCall(1, nil, fmt.Errorf("fake-get-business-error"))
 
-			response := resources.CreateDataContractType(logger, fakeStub, dataContractType)
+			response := resources.CreateDataContractType(fakeStub, dataContractType)
 
 			Expect(response.Message).To(Equal("error-failed-to-get-state-for-fake-provider"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -113,7 +111,7 @@ var _ = Describe("DataContractType", func() {
 			fakeStub.GetStateReturnsOnCall(0, dataCategoryBytes, nil)
 			fakeStub.GetStateReturnsOnCall(1, nil, nil)
 
-			response := resources.CreateDataContractType(logger, fakeStub, dataContractType)
+			response := resources.CreateDataContractType(fakeStub, dataContractType)
 
 			Expect(response.Message).To(Equal("error-business-does-not-exist-fake-provider"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -144,7 +142,7 @@ var _ = Describe("DataContractType", func() {
 			fakeStub.GetStateReturnsOnCall(1, providerBytes, nil)
 			fakeStub.GetStateReturnsOnCall(2, nil, fmt.Errorf("fake-err"))
 
-			response := resources.CreateDataContractType(logger, fakeStub, dataContractType)
+			response := resources.CreateDataContractType(fakeStub, dataContractType)
 
 			Expect(response.Message).To(Equal("error-failed-to-get-state-for-fake-data-contract-type"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -177,7 +175,7 @@ var _ = Describe("DataContractType", func() {
 			fakeStub.GetStateReturnsOnCall(1, providerBytes, nil)
 			fakeStub.GetStateReturnsOnCall(2, []byte("fake"), nil)
 
-			response := resources.CreateDataContractType(logger, fakeStub, dataContractType)
+			response := resources.CreateDataContractType(fakeStub, dataContractType)
 
 			Expect(response.Message).To(Equal("error-dataContractType-already-exists-fake-data-contract-type"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -211,7 +209,7 @@ var _ = Describe("DataContractType", func() {
 			fakeStub.GetStateReturnsOnCall(2, nil, nil)
 			fakeStub.PutStateReturns(fmt.Errorf("fake-error"))
 
-			response := resources.CreateDataContractType(logger, fakeStub, dataContractType)
+			response := resources.CreateDataContractType(fakeStub, dataContractType)
 
 			Expect(response.Message).To(Equal("fake-error"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -245,7 +243,7 @@ var _ = Describe("DataContractType", func() {
 			fakeStub.GetStateReturnsOnCall(2, nil, nil)
 			fakeStub.PutStateReturns(nil)
 
-			response := resources.CreateDataContractType(logger, fakeStub, dataContractType)
+			response := resources.CreateDataContractType(fakeStub, dataContractType)
 
 			Expect(response.Message).To(Equal(""))
 			Expect(response.Status).To(Equal(int32(shim.OK)))
@@ -264,7 +262,7 @@ var _ = Describe("DataContractType", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(dataContractTypeBytes, nil)
-			response := resources.GetDataContractType(logger, fakeStub, "fake-data-contract-type")
+			response := resources.GetDataContractType(fakeStub, "fake-data-contract-type")
 
 			errorMsg := fmt.Sprintf("error-docType-does-not-match-%s-vs-%s", resources.PERSON_DOCTYPE, resources.DATA_CONTRACT_TYPE_DOCTYPE)
 			Expect(response.Message).To(Equal(errorMsg))
@@ -281,7 +279,7 @@ var _ = Describe("DataContractType", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(dataContractTypeBytes, nil)
-			response := resources.GetDataContractType(logger, fakeStub, "fake-data-contract-type")
+			response := resources.GetDataContractType(fakeStub, "fake-data-contract-type")
 
 			Expect(response.Message).To(Equal(""))
 			Expect(response.Status).To(Equal(int32(shim.OK)))
@@ -293,7 +291,7 @@ var _ = Describe("DataContractType", func() {
 	Context(".GetDataContractTypeState", func() {
 		It("should fail when stub fails to get GetDataContractTypeState state", func() {
 			fakeStub.GetStateReturns(nil, fmt.Errorf("error-getting-data-contract-type"))
-			dataContractTypeBytes, err := resources.GetDataContractTypeState(logger, fakeStub, "fake-data-contract-type")
+			dataContractTypeBytes, err := resources.GetDataContractTypeState(fakeStub, "fake-data-contract-type")
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-failed-to-get-state-for-fake-data-contract-type"))
@@ -303,7 +301,7 @@ var _ = Describe("DataContractType", func() {
 
 		It("should fail when stub fails to get GetDataContractTypeState state", func() {
 			fakeStub.GetStateReturns(nil, nil)
-			dataContractTypeBytes, err := resources.GetDataContractTypeState(logger, fakeStub, "fake-data-contract-type")
+			dataContractTypeBytes, err := resources.GetDataContractTypeState(fakeStub, "fake-data-contract-type")
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-dataContractType-does-not-exist-fake-data-contract-type"))
@@ -313,7 +311,7 @@ var _ = Describe("DataContractType", func() {
 
 		It("should fail when json unmarshalling fails for GetDataContractTypeState state", func() {
 			fakeStub.GetStateReturns([]byte("fake-type"), nil)
-			dataContractTypeBytes, err := resources.GetDataContractTypeState(logger, fakeStub, "fake-data-contract-type")
+			dataContractTypeBytes, err := resources.GetDataContractTypeState(fakeStub, "fake-data-contract-type")
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-unmarshaling-fake-data-contract-type"))
@@ -331,7 +329,7 @@ var _ = Describe("DataContractType", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(dataContractTypeBytes, nil)
-			dataContractTypeBytes, err = resources.GetDataContractTypeState(logger, fakeStub, "fake-data-contract-type")
+			dataContractTypeBytes, err = resources.GetDataContractTypeState(fakeStub, "fake-data-contract-type")
 
 			Expect(err).To(HaveOccurred())
 			errMsg := fmt.Sprintf("error-docType-does-not-match-%s-vs-%s", resources.PERSON_DOCTYPE, resources.DATA_CONTRACT_TYPE_DOCTYPE)
@@ -350,7 +348,7 @@ var _ = Describe("DataContractType", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(dataContractTypeBytes, nil)
-			dataContractTypeBytes, err = resources.GetDataContractTypeState(logger, fakeStub, "fake-data-contract-type")
+			dataContractTypeBytes, err = resources.GetDataContractTypeState(fakeStub, "fake-data-contract-type")
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeStub.GetStateCallCount()).To(Equal(1))
@@ -382,7 +380,7 @@ var _ = Describe("DataContractType", func() {
 		})
 		It("should fail when stub fails to put dataContractType state", func() {
 			fakeStub.PutStateReturns(fmt.Errorf("data-contract-type-error"))
-			err := dataContractType.AddReview(logger, fakeStub, review)
+			err := dataContractType.AddReview(fakeStub, review)
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("data-contract-type-error"))
@@ -391,7 +389,7 @@ var _ = Describe("DataContractType", func() {
 
 		It("should succeed when stub succeeds to put dataContractType state", func() {
 			fakeStub.PutStateReturns(nil)
-			err := dataContractType.AddReview(logger, fakeStub, review)
+			err := dataContractType.AddReview(fakeStub, review)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeStub.PutStateCallCount()).To(Equal(1))
@@ -402,7 +400,7 @@ var _ = Describe("DataContractType", func() {
 		})
 		It("should succeed to add two reviews and change score", func() {
 			fakeStub.PutStateReturns(nil)
-			err := dataContractType.AddReview(logger, fakeStub, review)
+			err := dataContractType.AddReview(fakeStub, review)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeStub.PutStateCallCount()).To(Equal(1))
@@ -411,7 +409,7 @@ var _ = Describe("DataContractType", func() {
 			Expect(dataContractType.Score).To(Equal(float32(4)))
 			Expect(dataContractType.NumberOfReviews).To(Equal(1))
 
-			err = dataContractType.AddReview(logger, fakeStub, review2)
+			err = dataContractType.AddReview(fakeStub, review2)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeStub.PutStateCallCount()).To(Equal(2))

@@ -8,11 +8,17 @@ import:
   version: ^1.2.0
   subpackages:
   - ptypes/timestamp
-- package: github.com/hyperledger/fabric
-  version: ^1.3.0
-  subpackages:
-  - core/chaincode/shim
-  - protos/peer
+#- package: github.com/hyperledger/fabric
+#  version: ^1.3.0
+#  subpackages:
+#  - core/chaincode/shim
+#  - protos/peer
+- package: github.com/hyperledger/fabric-protos-go
+  version: master
+- package: github.com/sirupsen/logrus
+  version: v1.6.0
+- package: github.com/hyperledger/fabric-chaincode-go/shim
+  version: master
 - package: golang.org/x/oauth2
   subpackages:
   - jws

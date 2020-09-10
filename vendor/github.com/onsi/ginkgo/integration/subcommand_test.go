@@ -98,7 +98,7 @@ var _ = Describe("Subcommand", func() {
 			func Test{{.FormattedName}}(t *testing.T) {
 				// This is a {{.Package}} test
 			}`), 0666)
-			session := startGinkgo(pkgPath, "bootstrap", "--template", templateFile)
+			session := startGinkgo(pkgPath, "bootstrap", "--template", ".bootstrap")
 			Eventually(session).Should(gexec.Exit(0))
 			output := session.Out.Contents()
 
@@ -311,7 +311,7 @@ var _ = Describe("Subcommand", func() {
 	Describe("ginkgo bootstrap/generate", func() {
 		var pkgPath string
 		BeforeEach(func() {
-			pkgPath = tmpPath("some crazy-thing")
+			pkgPath = tmpPath("some-crazy-thing")
 			os.Mkdir(pkgPath, 0777)
 		})
 
@@ -360,29 +360,69 @@ var _ = Describe("Subcommand", func() {
 		})
 	})
 
+	Describe("Go module and sginkgo bootstrap/generate", func() {
+		var (
+			pkgPath     string
+			savedGoPath string
+		)
+
+		BeforeEach(func() {
+			pkgPath = tmpPath("myamazingmodule")
+			os.Mkdir(pkgPath, 0777)
+			Expect(ioutil.WriteFile(filepath.Join(pkgPath, "go.mod"), []byte("module fake.com/me/myamazingmodule\n"), 0777)).To(Succeed())
+			savedGoPath = os.Getenv("GOPATH")
+			Expect(os.Setenv("GOPATH", "")).To(Succeed())
+			Expect(os.Setenv("GO111MODULE", "on")).To(Succeed()) // needed pre-Go 1.13
+		})
+
+		AfterEach(func() {
+			Expect(os.Setenv("GOPATH", savedGoPath)).To(Succeed())
+			Expect(os.Setenv("GO111MODULE", "")).To(Succeed())
+		})
+
+		It("generates correctly named bootstrap and generate files with the module name", func() {
+			session := startGinkgo(pkgPath, "bootstrap")
+			Eventually(session).Should(gexec.Exit(0))
+
+			content, err := ioutil.ReadFile(filepath.Join(pkgPath, "myamazingmodule_suite_test.go"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(content).To(ContainSubstring("package myamazingmodule_test"), string(content))
+			Expect(content).To(ContainSubstring("Myamazingmodule Suite"), string(content))
+
+			session = startGinkgo(pkgPath, "generate")
+			Eventually(session).Should(gexec.Exit(0))
+
+			content, err = ioutil.ReadFile(filepath.Join(pkgPath, "myamazingmodule_test.go"))
+			Expect(err).NotTo(HaveOccurred())
+			Expect(content).To(ContainSubstring("package myamazingmodule_test"), string(content))
+			Expect(content).To(ContainSubstring("fake.com/me/myamazingmodule"), string(content))
+			Expect(content).To(ContainSubstring("Myamazingmodule"), string(content))
+		})
+	})
+
 	Describe("ginkgo blur", func() {
 		It("should unfocus tests", func() {
 			pathToTest := tmpPath("focused")
 			fixture := fixturePath("focused_fixture")
-			copyIn(fixture, pathToTest, false)
+			copyIn(fixture, pathToTest, true)
 
-			session := startGinkgo(pathToTest, "--noColor")
+			session := startGinkgo(pathToTest, "--noColor", "-r")
 			Eventually(session).Should(gexec.Exit(types.GINKGO_FOCUS_EXIT_CODE))
 			output := session.Out.Contents()
 
-			Ω(string(output)).Should(ContainSubstring("8 Passed"))
-			Ω(string(output)).Should(ContainSubstring("5 Skipped"))
+			Ω(string(output)).Should(ContainSubstring("Detected Programmatic Focus"))
 
 			session = startGinkgo(pathToTest, "blur")
 			Eventually(session).Should(gexec.Exit(0))
 			output = session.Out.Contents()
 			Ω(string(output)).ShouldNot(ContainSubstring("expected 'package'"))
 
-			session = startGinkgo(pathToTest, "--noColor")
+			session = startGinkgo(pathToTest, "--noColor", "-r")
 			Eventually(session).Should(gexec.Exit(0))
 			output = session.Out.Contents()
-			Ω(string(output)).Should(ContainSubstring("13 Passed"))
-			Ω(string(output)).Should(ContainSubstring("0 Skipped"))
+			Ω(string(output)).Should(ContainSubstring("Ginkgo ran 2 suites"))
+			Ω(string(output)).Should(ContainSubstring("Test Suite Passed"))
+			Ω(string(output)).ShouldNot(ContainSubstring("Detected Programmatic Focus"))
 
 			Expect(sameFile(filepath.Join(pathToTest, "README.md"), filepath.Join(fixture, "README.md"))).To(BeTrue())
 		})
@@ -421,7 +461,7 @@ var _ = Describe("Subcommand", func() {
 		It("should print out usage information", func() {
 			session := startGinkgo("", "help")
 			Eventually(session).Should(gexec.Exit(0))
-			output := string(session.Err.Contents())
+			output := string(session.Out.Contents())
 
 			Ω(output).Should(MatchRegexp(`Ginkgo Version \d+\.\d+\.\d+`))
 			Ω(output).Should(ContainSubstring("ginkgo watch"))

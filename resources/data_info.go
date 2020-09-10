@@ -8,9 +8,9 @@ package resources
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/hyperledger/fabric/core/chaincode/shim"
-	pb "github.com/hyperledger/fabric/protos/peer"
+        logger "github.com/sirupsen/logrus"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 	"github.com/lgsvl/data-marketplace-chaincode/utils"
 )
 
@@ -23,12 +23,12 @@ type DataReceivedByConsumer struct {
 	DataContractID string `json:"dataContract"`
 }
 
-func SetDataInfoSentToConsumer(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, dataInfo DataInfoSentToConsumer) pb.Response {
+func SetDataInfoSentToConsumer(stub shim.ChaincodeStubInterface, dataInfo DataInfoSentToConsumer) pb.Response {
 	logger.Info("entering-SetDataInfoSentToConsumer")
 	defer logger.Info("exiting-SetDataInfoSentToConsumer")
 
 	// ==== Check data attributes
-	dataContract, err := checkAndGetAttributes(logger, stub, dataInfo.DataContractID)
+	dataContract, err := checkAndGetAttributes(stub, dataInfo.DataContractID)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -41,26 +41,26 @@ func SetDataInfoSentToConsumer(logger *shim.ChaincodeLogger, stub shim.Chaincode
 		return shim.Error(errorMsg)
 	}
 
-	err = dataContract.SetFileStatus(logger, stub, DATASHIPPED, dataInfo.Hash, true)
+	err = dataContract.SetFileStatus(stub, DATASHIPPED, dataInfo.Hash, true)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 
-	consumerID, err := utils.GetAccountIDFromToken(logger, fmt.Sprintf("%s-%s", ACCOUNT_DOCTYPE, dataContract.ConsumerID))
+	consumerID, err := utils.GetAccountIDFromToken(fmt.Sprintf("%s-%s", ACCOUNT_DOCTYPE, dataContract.ConsumerID))
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
-	providerID, err := utils.GetAccountIDFromToken(logger, fmt.Sprintf("%s-%s", ACCOUNT_DOCTYPE, dataContract.ProviderID))
+	providerID, err := utils.GetAccountIDFromToken(fmt.Sprintf("%s-%s", ACCOUNT_DOCTYPE, dataContract.ProviderID))
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 
-	dataContarctType, err := GetDataContractTypeStructState(logger, stub, dataContract.DataContractTypeID)
+	dataContarctType, err := GetDataContractTypeStructState(stub, dataContract.DataContractTypeID)
 
-	_, err = TransferFrom(logger, stub, consumerID, providerID, dataContarctType.PriceType.Amount)
+	_, err = TransferFrom(stub, consumerID, providerID, dataContarctType.PriceType.Amount)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -68,12 +68,12 @@ func SetDataInfoSentToConsumer(logger *shim.ChaincodeLogger, stub shim.Chaincode
 	return shim.Success(nil)
 }
 
-func SetDataReceivedByConsumer(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, dataReceived DataReceivedByConsumer) pb.Response {
+func SetDataReceivedByConsumer(stub shim.ChaincodeStubInterface, dataReceived DataReceivedByConsumer) pb.Response {
 	logger.Info("entering-SetDataReceivedByConsumer")
 	defer logger.Info("exiting-SetDataReceivedByConsumer")
 
 	// ==== Check data attributes
-	dataContract, err := checkAndGetAttributes(logger, stub, dataReceived.DataContractID)
+	dataContract, err := checkAndGetAttributes(stub, dataReceived.DataContractID)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -85,7 +85,7 @@ func SetDataReceivedByConsumer(logger *shim.ChaincodeLogger, stub shim.Chaincode
 		return shim.Error(errorMsg)
 	}
 
-	err = dataContract.SetFileStatus(logger, stub, DATARECEIVED, Hash{}, false)
+	err = dataContract.SetFileStatus(stub, DATARECEIVED, Hash{}, false)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -94,11 +94,11 @@ func SetDataReceivedByConsumer(logger *shim.ChaincodeLogger, stub shim.Chaincode
 	return shim.Success(nil)
 }
 
-func checkAndGetAttributes(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, dataContractID string) (DataContract, error) {
+func checkAndGetAttributes(stub shim.ChaincodeStubInterface, dataContractID string) (DataContract, error) {
 	logger.Info("entering-checkAttribute-dataTransaction")
 	defer logger.Info("exiting-checkAttributes-dataTransaction")
 
-	dataContractAsBytes, err := GetDataContractState(logger, stub, dataContractID)
+	dataContractAsBytes, err := GetDataContractState(stub, dataContractID)
 	if err != nil {
 		logger.Error(err.Error())
 		return DataContract{}, err

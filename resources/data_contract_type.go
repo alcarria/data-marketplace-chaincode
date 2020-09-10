@@ -9,9 +9,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"github.com/hyperledger/fabric/core/chaincode/shim"
-	pb "github.com/hyperledger/fabric/protos/peer"
+        logger "github.com/sirupsen/logrus"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 )
 
 type DataContractType struct {
@@ -34,7 +34,7 @@ type DataContractType struct {
 	NumberOfReviews  int                    `json:"numberOfReviews"`
 }
 
-func CreateDataContractType(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, dataContractType DataContractType) pb.Response {
+func CreateDataContractType(stub shim.ChaincodeStubInterface, dataContractType DataContractType) pb.Response {
 	logger.Info("entering-create-dataContractType")
 	defer logger.Info("exiting-create-dataContractType")
 
@@ -42,7 +42,7 @@ func CreateDataContractType(logger *shim.ChaincodeLogger, stub shim.ChaincodeStu
 	dataContractType.NumberOfReviews = 0
 
 	// === Check that data is accurate
-	err := dataContractType.checkAttributes(logger, stub)
+	err := dataContractType.checkAttributes(stub)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -75,11 +75,11 @@ func CreateDataContractType(logger *shim.ChaincodeLogger, stub shim.ChaincodeStu
 	return shim.Success(nil)
 }
 
-func GetDataContractType(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, id string) pb.Response {
+func GetDataContractType(stub shim.ChaincodeStubInterface, id string) pb.Response {
 	logger.Info("entering-get-dataContractType")
 	defer logger.Info("exiting-get-dataContractType")
 
-	dataContractTypeAsBytes, err := GetDataContractTypeState(logger, stub, id)
+	dataContractTypeAsBytes, err := GetDataContractTypeState(stub, id)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -88,11 +88,11 @@ func GetDataContractType(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubIn
 	return shim.Success(dataContractTypeAsBytes)
 }
 
-func GetDataContractTypeState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, id string) ([]byte, error) {
+func GetDataContractTypeState(stub shim.ChaincodeStubInterface, id string) ([]byte, error) {
 	logger.Info("entering-get-dataContractType-state")
 	defer logger.Info("exiting-get-dataContractType-state")
 
-	dataContractType, err := GetDataContractTypeStructState(logger, stub, id)
+	dataContractType, err := GetDataContractTypeStructState(stub, id)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -106,7 +106,7 @@ func GetDataContractTypeState(logger *shim.ChaincodeLogger, stub shim.ChaincodeS
 	return dataContractTypeAsbytes, nil
 }
 
-func GetDataContractTypeStructState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, id string) (DataContractType, error) {
+func GetDataContractTypeStructState(stub shim.ChaincodeStubInterface, id string) (DataContractType, error) {
 	logger.Info("entering-get-dataContractType-state")
 	defer logger.Info("exiting-get-dataContractType-state")
 
@@ -136,7 +136,7 @@ func GetDataContractTypeStructState(logger *shim.ChaincodeLogger, stub shim.Chai
 	return dataContractType, nil
 }
 
-func (d *DataContractType) checkAttributes(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) error {
+func (d *DataContractType) checkAttributes(stub shim.ChaincodeStubInterface) error {
 	logger.Info("entering-checkAttributes-dataContractType")
 	defer logger.Info("exiting-checkAttributes-dataContractType")
 
@@ -157,13 +157,13 @@ func (d *DataContractType) checkAttributes(logger *shim.ChaincodeLogger, stub sh
 
 	}
 
-	_, err := GetDataCategoryState(logger, stub, d.CategoryID)
+	_, err := GetDataCategoryState(stub, d.CategoryID)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
 	}
 
-	_, err = GetBusinessState(logger, stub, d.ProviderID)
+	_, err = GetBusinessState(stub, d.ProviderID)
 	if err != nil {
 		logger.Error(err.Error())
 		return err
@@ -171,7 +171,7 @@ func (d *DataContractType) checkAttributes(logger *shim.ChaincodeLogger, stub sh
 	return nil
 }
 
-func (d *DataContractType) AddReview(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, review Review) error {
+func (d *DataContractType) AddReview(stub shim.ChaincodeStubInterface, review Review) error {
 	d.Score = (d.Score*float32(d.NumberOfReviews) + float32(review.Score)) / float32(d.NumberOfReviews+1)
 	d.NumberOfReviews++
 	d.Reviews = append(d.Reviews, review)

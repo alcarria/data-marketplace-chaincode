@@ -12,17 +12,17 @@ import (
 	"math/rand"
 	"sort"
 	"time"
-
-	"github.com/hyperledger/fabric/core/chaincode/shim"
-	pb "github.com/hyperledger/fabric/protos/peer"
+        logger "github.com/sirupsen/logrus"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 )
 
 // =========================================================================================
 // Business related queries
 // =========================================================================================
 
-func GetBusinesses(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) pb.Response {
-	queryResults, err := getDocumentsByDocType(logger, stub, BUSINESS_DOCTYPE)
+func GetBusinesses(stub shim.ChaincodeStubInterface) pb.Response {
+	queryResults, err := getDocumentsByDocType(stub, BUSINESS_DOCTYPE)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -30,8 +30,8 @@ func GetBusinesses(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterfac
 	return shim.Success(queryResults)
 }
 
-func GetBusinessesWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, pageSize int32, bookmark string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeWithPagination(logger, stub, BUSINESS_DOCTYPE, pageSize, bookmark)
+func GetBusinessesWithPagination(stub shim.ChaincodeStubInterface, pageSize int32, bookmark string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeWithPagination(stub, BUSINESS_DOCTYPE, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -43,8 +43,8 @@ func GetBusinessesWithPagination(logger *shim.ChaincodeLogger, stub shim.Chainco
 // DataCategory related queries
 // =========================================================================================
 
-func GetDataCategories(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) pb.Response {
-	queryResults, err := getDocumentsByDocType(logger, stub, DATA_CATEGORY_DOCTYPE)
+func GetDataCategories(stub shim.ChaincodeStubInterface) pb.Response {
+	queryResults, err := getDocumentsByDocType(stub, DATA_CATEGORY_DOCTYPE)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -52,8 +52,8 @@ func GetDataCategories(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInte
 	return shim.Success(queryResults)
 }
 
-func GetDataCategoriesWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, pageSize int32, bookmark string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeWithPagination(logger, stub, DATA_CATEGORY_DOCTYPE, pageSize, bookmark)
+func GetDataCategoriesWithPagination(stub shim.ChaincodeStubInterface, pageSize int32, bookmark string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeWithPagination(stub, DATA_CATEGORY_DOCTYPE, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -66,8 +66,8 @@ type PopularDataCategory struct {
 	Number         int32  `json:"number"`
 }
 
-func GetPopularDataCategories(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, size int32) pb.Response {
-	queryResults, err := getDocumentsByDocType(logger, stub, DATA_CONTRACT_TYPE_DOCTYPE)
+func GetPopularDataCategories(stub shim.ChaincodeStubInterface, size int32) pb.Response {
+	queryResults, err := getDocumentsByDocType(stub, DATA_CONTRACT_TYPE_DOCTYPE)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -123,8 +123,8 @@ func GetPopularDataCategories(logger *shim.ChaincodeLogger, stub shim.ChaincodeS
 // DataContractType related queries
 // =========================================================================================
 
-func GetRecommendedDataContractType(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) pb.Response {
-	queryResults, err := getDocumentsByDocType(logger, stub, DATA_CONTRACT_TYPE_DOCTYPE)
+func GetRecommendedDataContractType(stub shim.ChaincodeStubInterface) pb.Response {
+	queryResults, err := getDocumentsByDocType(stub, DATA_CONTRACT_TYPE_DOCTYPE)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -145,13 +145,13 @@ func GetRecommendedDataContractType(logger *shim.ChaincodeLogger, stub shim.Chai
 	return shim.Success(dataContractTypeAsbytes)
 }
 
-func GetDataContractTypesAfterTimeStamp(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, timestamp string) pb.Response {
+func GetDataContractTypesAfterTimeStamp(stub shim.ChaincodeStubInterface, timestamp string) pb.Response {
 	queryTime, err := time.Parse("2006-01-02T15:04:05.000Z", timestamp)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 
-	queryResults, err := getDocumentsByDocType(logger, stub, DATA_CONTRACT_TYPE_DOCTYPE)
+	queryResults, err := getDocumentsByDocType(stub, DATA_CONTRACT_TYPE_DOCTYPE)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
@@ -173,25 +173,16 @@ func GetDataContractTypesAfterTimeStamp(logger *shim.ChaincodeLogger, stub shim.
 	return shim.Success(byteRes)
 }
 
-func GetDataContractTypes(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) pb.Response {
-	queryResults, err := getDocumentsByDocType(logger, stub, DATA_CONTRACT_TYPE_DOCTYPE)
+func GetDataContractTypes(stub shim.ChaincodeStubInterface) pb.Response {
+	queryResults, err := getDocumentsByDocType(stub, DATA_CONTRACT_TYPE_DOCTYPE)
 	if err != nil {
 		return shim.Error(err.Error())
 	}
 	return shim.Success(queryResults)
 }
 
-func GetDataContractTypesWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, pageSize int32, bookmark string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeWithPagination(logger, stub, DATA_CONTRACT_TYPE_DOCTYPE, pageSize, bookmark)
-	if err != nil {
-		logger.Error(err.Error())
-		return shim.Error(err.Error())
-	}
-	return shim.Success(queryResults)
-}
-
-func GetDataContractTypesByCategory(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, categoryId string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndCategory(logger, stub, DATA_CONTRACT_TYPE_DOCTYPE, categoryId)
+func GetDataContractTypesWithPagination(stub shim.ChaincodeStubInterface, pageSize int32, bookmark string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeWithPagination(stub, DATA_CONTRACT_TYPE_DOCTYPE, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -199,8 +190,8 @@ func GetDataContractTypesByCategory(logger *shim.ChaincodeLogger, stub shim.Chai
 	return shim.Success(queryResults)
 }
 
-func GetDataContractTypesByCategoryWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, categoryId string, pageSize int32, bookmark string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndCategoryWithPagination(logger, stub, DATA_CONTRACT_TYPE_DOCTYPE, categoryId, pageSize, bookmark)
+func GetDataContractTypesByCategory(stub shim.ChaincodeStubInterface, categoryId string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndCategory(stub, DATA_CONTRACT_TYPE_DOCTYPE, categoryId)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -208,17 +199,26 @@ func GetDataContractTypesByCategoryWithPagination(logger *shim.ChaincodeLogger, 
 	return shim.Success(queryResults)
 }
 
-func getDocumentsByDocTypeAndCategory(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, categoryId string) ([]byte, error) {
+func GetDataContractTypesByCategoryWithPagination(stub shim.ChaincodeStubInterface, categoryId string, pageSize int32, bookmark string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndCategoryWithPagination(stub, DATA_CONTRACT_TYPE_DOCTYPE, categoryId, pageSize, bookmark)
+	if err != nil {
+		logger.Error(err.Error())
+		return shim.Error(err.Error())
+	}
+	return shim.Success(queryResults)
+}
+
+func getDocumentsByDocTypeAndCategory(stub shim.ChaincodeStubInterface, docType string, categoryId string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"categoryId\":\"" + categoryId + "\"}}"
-	return getQueryResultForQueryString(logger, stub, query)
+	return getQueryResultForQueryString(stub, query)
 }
-func getDocumentsByDocTypeAndCategoryWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, categoryId string, pageSize int32, bookmark string) ([]byte, error) {
+func getDocumentsByDocTypeAndCategoryWithPagination(stub shim.ChaincodeStubInterface, docType string, categoryId string, pageSize int32, bookmark string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"categoryId\":\"" + categoryId + "\"}}"
-	return getQueryResultForQueryStringWithPagination(logger, stub, query, pageSize, bookmark)
+	return getQueryResultForQueryStringWithPagination(stub, query, pageSize, bookmark)
 }
 
-func GetDataContractTypesByProvider(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, providerId string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndProvider(logger, stub, DATA_CONTRACT_TYPE_DOCTYPE, providerId)
+func GetDataContractTypesByProvider(stub shim.ChaincodeStubInterface, providerId string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndProvider(stub, DATA_CONTRACT_TYPE_DOCTYPE, providerId)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -226,8 +226,8 @@ func GetDataContractTypesByProvider(logger *shim.ChaincodeLogger, stub shim.Chai
 	return shim.Success(queryResults)
 }
 
-func GetDataContractTypesByProviderWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, providerId string, pageSize int32, bookmark string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndProviderWithPagination(logger, stub, DATA_CONTRACT_TYPE_DOCTYPE, providerId, pageSize, bookmark)
+func GetDataContractTypesByProviderWithPagination(stub shim.ChaincodeStubInterface, providerId string, pageSize int32, bookmark string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndProviderWithPagination(stub, DATA_CONTRACT_TYPE_DOCTYPE, providerId, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -240,8 +240,8 @@ type PopularDataContractType struct {
 	Number           int32            `json:"number"`
 }
 
-func GetPopularDataContractTypes(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, size int32) pb.Response {
-	queryResults, err := getDocumentsByDocType(logger, stub, DATA_CONTRACT_DOCTYPE)
+func GetPopularDataContractTypes(stub shim.ChaincodeStubInterface, size int32) pb.Response {
+	queryResults, err := getDocumentsByDocType(stub, DATA_CONTRACT_DOCTYPE)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -264,7 +264,7 @@ func GetPopularDataContractTypes(logger *shim.ChaincodeLogger, stub shim.Chainco
 			popularDataContractType.Number++
 			responseMap[dataContractArray[i].DataContractTypeID] = popularDataContractType
 		} else {
-			dataContractType, err := GetDataContractTypeStructState(logger, stub, dataContractArray[i].DataContractTypeID)
+			dataContractType, err := GetDataContractTypeStructState(stub, dataContractArray[i].DataContractTypeID)
 			if err == nil {
 				popularDataContractType := PopularDataContractType{
 					DataContractType: dataContractType,
@@ -306,8 +306,8 @@ func GetPopularDataContractTypes(logger *shim.ChaincodeLogger, stub shim.Chainco
 // DataContract related queries
 // =========================================================================================
 
-func GetDataContracts(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) pb.Response {
-	queryResults, err := getDocumentsByDocType(logger, stub, DATA_CONTRACT_DOCTYPE)
+func GetDataContracts(stub shim.ChaincodeStubInterface) pb.Response {
+	queryResults, err := getDocumentsByDocType(stub, DATA_CONTRACT_DOCTYPE)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -315,8 +315,8 @@ func GetDataContracts(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInter
 	return shim.Success(queryResults)
 }
 
-func GetDataContractsWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, pageSize int32, bookmark string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeWithPagination(logger, stub, DATA_CONTRACT_DOCTYPE, pageSize, bookmark)
+func GetDataContractsWithPagination(stub shim.ChaincodeStubInterface, pageSize int32, bookmark string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeWithPagination(stub, DATA_CONTRACT_DOCTYPE, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -324,8 +324,8 @@ func GetDataContractsWithPagination(logger *shim.ChaincodeLogger, stub shim.Chai
 	return shim.Success(queryResults)
 }
 
-func GetDataContractsByProvider(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, providerId string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndProvider(logger, stub, DATA_CONTRACT_DOCTYPE, providerId)
+func GetDataContractsByProvider(stub shim.ChaincodeStubInterface, providerId string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndProvider(stub, DATA_CONTRACT_DOCTYPE, providerId)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -333,8 +333,8 @@ func GetDataContractsByProvider(logger *shim.ChaincodeLogger, stub shim.Chaincod
 	return shim.Success(queryResults)
 }
 
-func GetDataContractsByProviderWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, providerId string, pageSize int32, bookmark string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndProviderWithPagination(logger, stub, DATA_CONTRACT_DOCTYPE, providerId, pageSize, bookmark)
+func GetDataContractsByProviderWithPagination(stub shim.ChaincodeStubInterface, providerId string, pageSize int32, bookmark string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndProviderWithPagination(stub, DATA_CONTRACT_DOCTYPE, providerId, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -342,8 +342,8 @@ func GetDataContractsByProviderWithPagination(logger *shim.ChaincodeLogger, stub
 	return shim.Success(queryResults)
 }
 
-func GetDataContractsByConsumer(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, consumerId string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndConsumer(logger, stub, DATA_CONTRACT_DOCTYPE, consumerId)
+func GetDataContractsByConsumer(stub shim.ChaincodeStubInterface, consumerId string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndConsumer(stub, DATA_CONTRACT_DOCTYPE, consumerId)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -351,8 +351,8 @@ func GetDataContractsByConsumer(logger *shim.ChaincodeLogger, stub shim.Chaincod
 	return shim.Success(queryResults)
 }
 
-func GetDataContractsByConsumerWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, consumerId string, pageSize int32, bookmark string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndConsumerWithPagination(logger, stub, DATA_CONTRACT_DOCTYPE, consumerId, pageSize, bookmark)
+func GetDataContractsByConsumerWithPagination(stub shim.ChaincodeStubInterface, consumerId string, pageSize int32, bookmark string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndConsumerWithPagination(stub, DATA_CONTRACT_DOCTYPE, consumerId, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -360,8 +360,8 @@ func GetDataContractsByConsumerWithPagination(logger *shim.ChaincodeLogger, stub
 	return shim.Success(queryResults)
 }
 
-func SelectDataSetContractsToUpload(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, dataContractTypeId string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndDataContractTypeAndFileStatus(logger, stub, DATA_CONTRACT_DOCTYPE, dataContractTypeId, "PROPOSAL")
+func SelectDataSetContractsToUpload(stub shim.ChaincodeStubInterface, dataContractTypeId string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndDataContractTypeAndFileStatus(stub, DATA_CONTRACT_DOCTYPE, dataContractTypeId, "PROPOSAL")
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -369,8 +369,8 @@ func SelectDataSetContractsToUpload(logger *shim.ChaincodeLogger, stub shim.Chai
 	return shim.Success(queryResults)
 }
 
-func SelectDataSetContractsToUploadWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, dataContractTypeId string, pageSize int32, bookmark string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndDataContractTypeAndFileStatusWithPagination(logger, stub, DATA_CONTRACT_DOCTYPE, dataContractTypeId, "PROPOSAL", pageSize, bookmark)
+func SelectDataSetContractsToUploadWithPagination(stub shim.ChaincodeStubInterface, dataContractTypeId string, pageSize int32, bookmark string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndDataContractTypeAndFileStatusWithPagination(stub, DATA_CONTRACT_DOCTYPE, dataContractTypeId, "PROPOSAL", pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -378,8 +378,8 @@ func SelectDataSetContractsToUploadWithPagination(logger *shim.ChaincodeLogger, 
 	return shim.Success(queryResults)
 }
 
-func SelectBusinessDataSetsToUpload(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, provider string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndProviderAndFileStatus(logger, stub, DATA_CONTRACT_DOCTYPE, provider, "PROPOSAL")
+func SelectBusinessDataSetsToUpload(stub shim.ChaincodeStubInterface, provider string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndProviderAndFileStatus(stub, DATA_CONTRACT_DOCTYPE, provider, "PROPOSAL")
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -387,8 +387,8 @@ func SelectBusinessDataSetsToUpload(logger *shim.ChaincodeLogger, stub shim.Chai
 	return shim.Success(queryResults)
 }
 
-func SelectBusinessDataSetsToUploadWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, provider string, pageSize int32, bookmark string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndProviderAndFileStatusWithPagination(logger, stub, DATA_CONTRACT_DOCTYPE, provider, "PROPOSAL", pageSize, bookmark)
+func SelectBusinessDataSetsToUploadWithPagination(stub shim.ChaincodeStubInterface, provider string, pageSize int32, bookmark string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndProviderAndFileStatusWithPagination(stub, DATA_CONTRACT_DOCTYPE, provider, "PROPOSAL", pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -396,8 +396,8 @@ func SelectBusinessDataSetsToUploadWithPagination(logger *shim.ChaincodeLogger, 
 	return shim.Success(queryResults)
 }
 
-func SelectDataContractsByDataContractType(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, dataContractTypeID string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndContractType(logger, stub, DATA_CONTRACT_DOCTYPE, dataContractTypeID)
+func SelectDataContractsByDataContractType(stub shim.ChaincodeStubInterface, dataContractTypeID string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndContractType(stub, DATA_CONTRACT_DOCTYPE, dataContractTypeID)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -405,8 +405,8 @@ func SelectDataContractsByDataContractType(logger *shim.ChaincodeLogger, stub sh
 	return shim.Success(queryResults)
 }
 
-func SelectDataContractsByDataContractTypeWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, dataContractTypeID string, pageSize int32, bookmark string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndContractTypeWithPagination(logger, stub, DATA_CONTRACT_DOCTYPE, dataContractTypeID, pageSize, bookmark)
+func SelectDataContractsByDataContractTypeWithPagination(stub shim.ChaincodeStubInterface, dataContractTypeID string, pageSize int32, bookmark string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndContractTypeWithPagination(stub, DATA_CONTRACT_DOCTYPE, dataContractTypeID, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -414,14 +414,14 @@ func SelectDataContractsByDataContractTypeWithPagination(logger *shim.ChaincodeL
 	return shim.Success(queryResults)
 }
 
-func SelectBusinessDataSetsToUploadByContractType(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, dataContractTypeID string) pb.Response {
-	dataContractType, err := GetDataContractTypeStructState(logger, stub, dataContractTypeID)
+func SelectBusinessDataSetsToUploadByContractType(stub shim.ChaincodeStubInterface, dataContractTypeID string) pb.Response {
+	dataContractType, err := GetDataContractTypeStructState(stub, dataContractTypeID)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 	provider := dataContractType.ProviderID
-	queryResults, err := getDocumentsByDocTypeAndProviderAndFileStatusAndContractType(logger, stub, DATA_CONTRACT_DOCTYPE, provider, "PROPOSAL", dataContractTypeID)
+	queryResults, err := getDocumentsByDocTypeAndProviderAndFileStatusAndContractType(stub, DATA_CONTRACT_DOCTYPE, provider, "PROPOSAL", dataContractTypeID)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -429,14 +429,14 @@ func SelectBusinessDataSetsToUploadByContractType(logger *shim.ChaincodeLogger, 
 	return shim.Success(queryResults)
 }
 
-func SelectBusinessDataSetsToUploadByContractTypeWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, dataContractTypeID string, pageSize int32, bookmark string) pb.Response {
-	dataContractType, err := GetDataContractTypeStructState(logger, stub, dataContractTypeID)
+func SelectBusinessDataSetsToUploadByContractTypeWithPagination(stub shim.ChaincodeStubInterface, dataContractTypeID string, pageSize int32, bookmark string) pb.Response {
+	dataContractType, err := GetDataContractTypeStructState(stub, dataContractTypeID)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 	provider := dataContractType.ProviderID
-	queryResults, err := getDocumentsByDocTypeAndProviderAndFileStatusAndContractTypeWithPagination(logger, stub, DATA_CONTRACT_DOCTYPE, provider, "PROPOSAL", dataContractTypeID, pageSize, bookmark)
+	queryResults, err := getDocumentsByDocTypeAndProviderAndFileStatusAndContractTypeWithPagination(stub, DATA_CONTRACT_DOCTYPE, provider, "PROPOSAL", dataContractTypeID, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -444,8 +444,8 @@ func SelectBusinessDataSetsToUploadByContractTypeWithPagination(logger *shim.Cha
 	return shim.Success(queryResults)
 }
 
-func SelectNumberOfBusinessDataSetsToUpload(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, provider string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndProviderAndFileStatus(logger, stub, DATA_CONTRACT_DOCTYPE, provider, "PROPOSAL")
+func SelectNumberOfBusinessDataSetsToUpload(stub shim.ChaincodeStubInterface, provider string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndProviderAndFileStatus(stub, DATA_CONTRACT_DOCTYPE, provider, "PROPOSAL")
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -473,9 +473,9 @@ func SelectNumberOfBusinessDataSetsToUpload(logger *shim.ChaincodeLogger, stub s
 	return shim.Success(responseMapAsBytes)
 }
 
-func SelectBusinessDataSetsSoldShippedNotDownloaded(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, providerId string, today string) pb.Response {
+func SelectBusinessDataSetsSoldShippedNotDownloaded(stub shim.ChaincodeStubInterface, providerId string, today string) pb.Response {
 	query := "{\"selector\":{\"provider\":\"" + providerId + "\", \"$or\": [{ \"extras.fileStatus\":\"DATASHIPPED\" }, { \"extras.streamEndDateTime\":  {\"$gte\":\"" + today + "\" } }]}} "
-	queryResults, err := getQueryResultForQueryString(logger, stub, query)
+	queryResults, err := getQueryResultForQueryString(stub, query)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -483,9 +483,9 @@ func SelectBusinessDataSetsSoldShippedNotDownloaded(logger *shim.ChaincodeLogger
 	return shim.Success(queryResults)
 }
 
-func SelectBusinessDataSetsSoldShippedNotDownloadedWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, providerId string, today string, pageSize int32, bookmark string) pb.Response {
+func SelectBusinessDataSetsSoldShippedNotDownloadedWithPagination(stub shim.ChaincodeStubInterface, providerId string, today string, pageSize int32, bookmark string) pb.Response {
 	query := "{\"selector\":{\"provider\":\"" + providerId + "\", \"$or\": [{ \"extras.fileStatus\":\"DATASHIPPED\" }, { \"extras.streamEndDateTime\":  {\"$gte\":\"" + today + "\" } }]}} "
-	queryResults, err := getQueryResultForQueryStringWithPagination(logger, stub, query, pageSize, bookmark)
+	queryResults, err := getQueryResultForQueryStringWithPagination(stub, query, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -493,10 +493,10 @@ func SelectBusinessDataSetsSoldShippedNotDownloadedWithPagination(logger *shim.C
 	return shim.Success(queryResults)
 }
 
-func SelectBusinessDataSetsSoldAndDownloaded(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, providerId string, today string) pb.Response {
+func SelectBusinessDataSetsSoldAndDownloaded(stub shim.ChaincodeStubInterface, providerId string, today string) pb.Response {
 
 	query := "{\"selector\":{\"provider\":\"" + providerId + "\", \"$or\": [{ \"extras.fileStatus\":\"DATARECEIVED\" }, { \"extras.streamEndDateTime\":  {\"$lt\":\"" + today + "\" } }]}} "
-	queryResults, err := getQueryResultForQueryString(logger, stub, query)
+	queryResults, err := getQueryResultForQueryString(stub, query)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -504,27 +504,18 @@ func SelectBusinessDataSetsSoldAndDownloaded(logger *shim.ChaincodeLogger, stub 
 	return shim.Success(queryResults)
 }
 
-func SelectBusinessDataSetsSoldAndDownloadedWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, providerId string, today string, pageSize int32, bookmark string) pb.Response {
+func SelectBusinessDataSetsSoldAndDownloadedWithPagination(stub shim.ChaincodeStubInterface, providerId string, today string, pageSize int32, bookmark string) pb.Response {
 
 	query := "{\"selector\":{\"provider\":\"" + providerId + "\", \"$or\": [{ \"extras.fileStatus\":\"DATARECEIVED\" }, { \"extras.streamEndDateTime\":  {\"$lt\":\"" + today + "\" } }]}} "
-	queryResults, err := getQueryResultForQueryStringWithPagination(logger, stub, query, pageSize, bookmark)
+	queryResults, err := getQueryResultForQueryStringWithPagination(stub, query, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
 	}
 	return shim.Success(queryResults)
 }
-func SelectBusinessDataSetsPurchasedNotUploaded(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, consumer string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndConsumerAndFileStatus(logger, stub, DATA_CONTRACT_DOCTYPE, consumer, "PROPOSAL")
-	if err != nil {
-		logger.Error(err.Error())
-		return shim.Error(err.Error())
-	}
-	return shim.Success(queryResults)
-}
-
-func SelectBusinessDataSetsPurchasedNotUploadedWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, consumer string, pageSize int32, bookmark string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeAndConsumerAndFileStatusWithPagination(logger, stub, DATA_CONTRACT_DOCTYPE, consumer, "PROPOSAL", pageSize, bookmark)
+func SelectBusinessDataSetsPurchasedNotUploaded(stub shim.ChaincodeStubInterface, consumer string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndConsumerAndFileStatus(stub, DATA_CONTRACT_DOCTYPE, consumer, "PROPOSAL")
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -532,10 +523,19 @@ func SelectBusinessDataSetsPurchasedNotUploadedWithPagination(logger *shim.Chain
 	return shim.Success(queryResults)
 }
 
-func SelectBusinessDataSetsPurchasedUploadedNotDownloaded(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, consumerId string, today string) pb.Response {
+func SelectBusinessDataSetsPurchasedNotUploadedWithPagination(stub shim.ChaincodeStubInterface, consumer string, pageSize int32, bookmark string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeAndConsumerAndFileStatusWithPagination(stub, DATA_CONTRACT_DOCTYPE, consumer, "PROPOSAL", pageSize, bookmark)
+	if err != nil {
+		logger.Error(err.Error())
+		return shim.Error(err.Error())
+	}
+	return shim.Success(queryResults)
+}
+
+func SelectBusinessDataSetsPurchasedUploadedNotDownloaded(stub shim.ChaincodeStubInterface, consumerId string, today string) pb.Response {
 
 	query := "{\"selector\":{\"consumer\":\"" + consumerId + "\", \"$or\": [{ \"extras.fileStatus\":\"DATASHIPPED\" }, { \"extras.streamEndDateTime\":  {\"$gte\":\"" + today + "\" } }]} }"
-	queryResults, err := getQueryResultForQueryString(logger, stub, query)
+	queryResults, err := getQueryResultForQueryString(stub, query)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -543,10 +543,10 @@ func SelectBusinessDataSetsPurchasedUploadedNotDownloaded(logger *shim.Chaincode
 	return shim.Success(queryResults)
 }
 
-func SelectBusinessDataSetsPurchasedUploadedNotDownloadedWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, consumerId string, today string, pageSize int32, bookmark string) pb.Response {
+func SelectBusinessDataSetsPurchasedUploadedNotDownloadedWithPagination(stub shim.ChaincodeStubInterface, consumerId string, today string, pageSize int32, bookmark string) pb.Response {
 
 	query := "{\"selector\":{\"consumer\":\"" + consumerId + "\", \"$or\": [{ \"extras.fileStatus\":\"DATASHIPPED\" }, { \"extras.streamEndDateTime\":  {\"$gte\":\"" + today + "\" } }]}} "
-	queryResults, err := getQueryResultForQueryStringWithPagination(logger, stub, query, pageSize, bookmark)
+	queryResults, err := getQueryResultForQueryStringWithPagination(stub, query, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -554,10 +554,10 @@ func SelectBusinessDataSetsPurchasedUploadedNotDownloadedWithPagination(logger *
 	return shim.Success(queryResults)
 }
 
-func SelectBusinessDataSetsPurchasedDownloaded(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, consumerId string, today string) pb.Response {
+func SelectBusinessDataSetsPurchasedDownloaded(stub shim.ChaincodeStubInterface, consumerId string, today string) pb.Response {
 
 	query := "{\"selector\":{\"consumer\":\"" + consumerId + "\", \"$or\": [{ \"extras.fileStatus\":\"DATARECEIVED\" }, { \"extras.streamEndDateTime\":  {\"$lt\":\"" + today + "\" } }]}} "
-	queryResults, err := getQueryResultForQueryString(logger, stub, query)
+	queryResults, err := getQueryResultForQueryString(stub, query)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -565,10 +565,10 @@ func SelectBusinessDataSetsPurchasedDownloaded(logger *shim.ChaincodeLogger, stu
 	return shim.Success(queryResults)
 }
 
-func SelectBusinessDataSetsPurchasedDownloadedWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, consumerId string, today string, pageSize int32, bookmark string) pb.Response {
+func SelectBusinessDataSetsPurchasedDownloadedWithPagination(stub shim.ChaincodeStubInterface, consumerId string, today string, pageSize int32, bookmark string) pb.Response {
 
 	query := "{\"selector\":{\"consumer\":\"" + consumerId + "\", \"$or\": [{ \"extras.fileStatus\":\"DATARECEIVED\" }, { \"extras.streamEndDateTime\":  {\"$lt\":\"" + today + "\" } }]}} "
-	queryResults, err := getQueryResultForQueryStringWithPagination(logger, stub, query, pageSize, bookmark)
+	queryResults, err := getQueryResultForQueryStringWithPagination(stub, query, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -576,81 +576,81 @@ func SelectBusinessDataSetsPurchasedDownloadedWithPagination(logger *shim.Chainc
 	return shim.Success(queryResults)
 }
 
-func getDocumentsByDocTypeAndProvider(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, providerId string) ([]byte, error) {
+func getDocumentsByDocTypeAndProvider(stub shim.ChaincodeStubInterface, docType string, providerId string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"provider\":\"" + providerId + "\"}}"
-	return getQueryResultForQueryString(logger, stub, query)
+	return getQueryResultForQueryString(stub, query)
 }
 
-func getDocumentsByDocTypeAndProviderWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, providerId string, pageSize int32, bookmark string) ([]byte, error) {
+func getDocumentsByDocTypeAndProviderWithPagination(stub shim.ChaincodeStubInterface, docType string, providerId string, pageSize int32, bookmark string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"provider\":\"" + providerId + "\"}}"
-	return getQueryResultForQueryStringWithPagination(logger, stub, query, pageSize, bookmark)
+	return getQueryResultForQueryStringWithPagination(stub, query, pageSize, bookmark)
 }
 
-func getDocumentsByDocTypeAndConsumer(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, consumerId string) ([]byte, error) {
+func getDocumentsByDocTypeAndConsumer(stub shim.ChaincodeStubInterface, docType string, consumerId string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"consumer\":\"" + consumerId + "\"}}"
-	return getQueryResultForQueryString(logger, stub, query)
+	return getQueryResultForQueryString(stub, query)
 }
 
-func getDocumentsByDocTypeAndConsumerWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, consumerId string, pageSize int32, bookmark string) ([]byte, error) {
+func getDocumentsByDocTypeAndConsumerWithPagination(stub shim.ChaincodeStubInterface, docType string, consumerId string, pageSize int32, bookmark string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"consumer\":\"" + consumerId + "\"}}"
-	return getQueryResultForQueryStringWithPagination(logger, stub, query, pageSize, bookmark)
+	return getQueryResultForQueryStringWithPagination(stub, query, pageSize, bookmark)
 }
 
-func getDocumentsByDocTypeAndDataContractTypeAndFileStatus(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, contractTypeId string, fileStatus string) ([]byte, error) {
+func getDocumentsByDocTypeAndDataContractTypeAndFileStatus(stub shim.ChaincodeStubInterface, docType string, contractTypeId string, fileStatus string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"dataContractType\":\"" + contractTypeId + "\", \"extras.fileStatus\":\"" + fileStatus + "\"}}"
-	return getQueryResultForQueryString(logger, stub, query)
+	return getQueryResultForQueryString(stub, query)
 }
 
-func getDocumentsByDocTypeAndDataContractTypeAndFileStatusWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, dataContractType string, fileStatus string, pageSize int32, bookmark string) ([]byte, error) {
+func getDocumentsByDocTypeAndDataContractTypeAndFileStatusWithPagination(stub shim.ChaincodeStubInterface, docType string, dataContractType string, fileStatus string, pageSize int32, bookmark string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"dataContractType\":\"" + dataContractType + "\", \"extras.fileStatus\":\"" + fileStatus + "\"}}"
-	return getQueryResultForQueryStringWithPagination(logger, stub, query, pageSize, bookmark)
+	return getQueryResultForQueryStringWithPagination(stub, query, pageSize, bookmark)
 }
 
-func getDocumentsByDocTypeAndProviderAndFileStatus(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, providerId string, fileStatus string) ([]byte, error) {
+func getDocumentsByDocTypeAndProviderAndFileStatus(stub shim.ChaincodeStubInterface, docType string, providerId string, fileStatus string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"provider\":\"" + providerId + "\", \"extras.fileStatus\":\"" + fileStatus + "\"}}"
-	return getQueryResultForQueryString(logger, stub, query)
+	return getQueryResultForQueryString(stub, query)
 }
 
-func getDocumentsByDocTypeAndProviderAndFileStatusWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, providerId string, fileStatus string, pageSize int32, bookmark string) ([]byte, error) {
+func getDocumentsByDocTypeAndProviderAndFileStatusWithPagination(stub shim.ChaincodeStubInterface, docType string, providerId string, fileStatus string, pageSize int32, bookmark string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"provider\":\"" + providerId + "\", \"extras.fileStatus\":\"" + fileStatus + "\"}}"
-	return getQueryResultForQueryStringWithPagination(logger, stub, query, pageSize, bookmark)
+	return getQueryResultForQueryStringWithPagination(stub, query, pageSize, bookmark)
 }
 
-func getDocumentsByDocTypeAndContractType(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, dataContractType string) ([]byte, error) {
+func getDocumentsByDocTypeAndContractType(stub shim.ChaincodeStubInterface, docType string, dataContractType string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"dataContractType\":\"" + dataContractType + "\"}}"
-	return getQueryResultForQueryString(logger, stub, query)
+	return getQueryResultForQueryString(stub, query)
 }
 
-func getDocumentsByDocTypeAndContractTypeWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, dataContractType string, pageSize int32, bookmark string) ([]byte, error) {
+func getDocumentsByDocTypeAndContractTypeWithPagination(stub shim.ChaincodeStubInterface, docType string, dataContractType string, pageSize int32, bookmark string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"dataContractType\":\"" + dataContractType + "\"}}"
-	return getQueryResultForQueryStringWithPagination(logger, stub, query, pageSize, bookmark)
+	return getQueryResultForQueryStringWithPagination(stub, query, pageSize, bookmark)
 }
 
-func getDocumentsByDocTypeAndProviderAndFileStatusAndContractType(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, providerId string, fileStatus string, dataContractType string) ([]byte, error) {
+func getDocumentsByDocTypeAndProviderAndFileStatusAndContractType(stub shim.ChaincodeStubInterface, docType string, providerId string, fileStatus string, dataContractType string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"provider\":\"" + providerId + "\", \"extras.fileStatus\":\"" + fileStatus + "\", \"dataContractType\":\"" + dataContractType + "\"}}"
-	return getQueryResultForQueryString(logger, stub, query)
+	return getQueryResultForQueryString(stub, query)
 }
 
-func getDocumentsByDocTypeAndProviderAndFileStatusAndContractTypeWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, providerId string, fileStatus string, dataContractType string, pageSize int32, bookmark string) ([]byte, error) {
+func getDocumentsByDocTypeAndProviderAndFileStatusAndContractTypeWithPagination(stub shim.ChaincodeStubInterface, docType string, providerId string, fileStatus string, dataContractType string, pageSize int32, bookmark string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"provider\":\"" + providerId + "\", \"extras.fileStatus\":\"" + fileStatus + "\", \"dataContractType\":\"" + dataContractType + "\"}}"
-	return getQueryResultForQueryStringWithPagination(logger, stub, query, pageSize, bookmark)
+	return getQueryResultForQueryStringWithPagination(stub, query, pageSize, bookmark)
 }
-func getDocumentsByDocTypeAndConsumerAndFileStatus(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, consumerId string, fileStatus string) ([]byte, error) {
+func getDocumentsByDocTypeAndConsumerAndFileStatus(stub shim.ChaincodeStubInterface, docType string, consumerId string, fileStatus string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"consumer\":\"" + consumerId + "\", \"extras.fileStatus\":\"" + fileStatus + "\"}}"
-	return getQueryResultForQueryString(logger, stub, query)
+	return getQueryResultForQueryString(stub, query)
 }
 
-func getDocumentsByDocTypeAndConsumerAndFileStatusWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, consumerId string, fileStatus string, pageSize int32, bookmark string) ([]byte, error) {
+func getDocumentsByDocTypeAndConsumerAndFileStatusWithPagination(stub shim.ChaincodeStubInterface, docType string, consumerId string, fileStatus string, pageSize int32, bookmark string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\", \"consumer\":\"" + consumerId + "\", \"extras.fileStatus\":\"" + fileStatus + "\"}}"
-	return getQueryResultForQueryStringWithPagination(logger, stub, query, pageSize, bookmark)
+	return getQueryResultForQueryStringWithPagination(stub, query, pageSize, bookmark)
 }
 
 // =========================================================================================
 // Person related queries
 // =========================================================================================
 
-func GetPersons(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) pb.Response {
-	queryResults, err := getDocumentsByDocType(logger, stub, PERSON_DOCTYPE)
+func GetPersons(stub shim.ChaincodeStubInterface) pb.Response {
+	queryResults, err := getDocumentsByDocType(stub, PERSON_DOCTYPE)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -658,8 +658,8 @@ func GetPersons(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) 
 	return shim.Success(queryResults)
 }
 
-func GetPersonsWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, pageSize int32, bookmark string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeWithPagination(logger, stub, PERSON_DOCTYPE, pageSize, bookmark)
+func GetPersonsWithPagination(stub shim.ChaincodeStubInterface, pageSize int32, bookmark string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeWithPagination(stub, PERSON_DOCTYPE, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -671,8 +671,8 @@ func GetPersonsWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeS
 // Review related queries
 // =========================================================================================
 
-func GetReviews(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) pb.Response {
-	queryResults, err := getDocumentsByDocType(logger, stub, REVIEW_DOCTYPE)
+func GetReviews(stub shim.ChaincodeStubInterface) pb.Response {
+	queryResults, err := getDocumentsByDocType(stub, REVIEW_DOCTYPE)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -680,8 +680,8 @@ func GetReviews(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) 
 	return shim.Success(queryResults)
 }
 
-func GetReviewsWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, pageSize int32, bookmark string) pb.Response {
-	queryResults, err := getDocumentsByDocTypeWithPagination(logger, stub, REVIEW_DOCTYPE, pageSize, bookmark)
+func GetReviewsWithPagination(stub shim.ChaincodeStubInterface, pageSize int32, bookmark string) pb.Response {
+	queryResults, err := getDocumentsByDocTypeWithPagination(stub, REVIEW_DOCTYPE, pageSize, bookmark)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -693,21 +693,21 @@ func GetReviewsWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeS
 // getDocumentsByDocType functions
 // =========================================================================================
 
-func getDocumentsByDocType(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string) ([]byte, error) {
+func getDocumentsByDocType(stub shim.ChaincodeStubInterface, docType string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\"}}"
-	return getQueryResultForQueryString(logger, stub, query)
+	return getQueryResultForQueryString(stub, query)
 }
 
-func getDocumentsByDocTypeWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string, pageSize int32, bookmark string) ([]byte, error) {
+func getDocumentsByDocTypeWithPagination(stub shim.ChaincodeStubInterface, docType string, pageSize int32, bookmark string) ([]byte, error) {
 	query := "{\"selector\":{\"docType\":\"" + docType + "\"}}"
-	return getQueryResultForQueryStringWithPagination(logger, stub, query, pageSize, bookmark)
+	return getQueryResultForQueryStringWithPagination(stub, query, pageSize, bookmark)
 }
 
 // =========================================================================================
 // getQueryResultForQueryString executes the passed in query string.
 // Result set is built and returned as a byte array containing the JSON results.
 // =========================================================================================
-func getQueryResultForQueryString(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, queryString string) ([]byte, error) {
+func getQueryResultForQueryString(stub shim.ChaincodeStubInterface, queryString string) ([]byte, error) {
 
 	logInfo := "- getQueryResultForQueryString queryString:\n%s\n" + queryString
 	logger.Info(logInfo)
@@ -733,7 +733,7 @@ func getQueryResultForQueryString(logger *shim.ChaincodeLogger, stub shim.Chainc
 // getQueryResultForQueryStringWithPagination executes the passed in query string with
 // pagination info. Result set is built and returned as a byte array containing the JSON results.
 // =========================================================================================
-func getQueryResultForQueryStringWithPagination(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, queryString string, pageSize int32, bookmark string) ([]byte, error) {
+func getQueryResultForQueryStringWithPagination(stub shim.ChaincodeStubInterface, queryString string, pageSize int32, bookmark string) ([]byte, error) {
 
 	logger.Info("entering-getQueryResultForQueryStringWithPagination")
 	defer logger.Info("exiting-getQueryResultForQueryStringWithPagination")

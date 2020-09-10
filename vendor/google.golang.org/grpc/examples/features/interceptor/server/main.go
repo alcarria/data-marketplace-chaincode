@@ -32,10 +32,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	ecpb "google.golang.org/grpc/examples/features/proto/echo"
+	"google.golang.org/grpc/examples/data"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/grpc/testdata"
+
+	pb "google.golang.org/grpc/examples/features/proto/echo"
 )
 
 var (
@@ -50,22 +51,12 @@ func logger(format string, a ...interface{}) {
 	fmt.Printf("LOG:\t"+format+"\n", a...)
 }
 
-type server struct{}
-
-func (s *server) UnaryEcho(ctx context.Context, in *ecpb.EchoRequest) (*ecpb.EchoResponse, error) {
+func unaryEcho(ctx context.Context, in *pb.EchoRequest) (*pb.EchoResponse, error) {
 	fmt.Printf("unary echoing message %q\n", in.Message)
-	return &ecpb.EchoResponse{Message: in.Message}, nil
+	return &pb.EchoResponse{Message: in.Message}, nil
 }
 
-func (s *server) ServerStreamingEcho(in *ecpb.EchoRequest, stream ecpb.Echo_ServerStreamingEchoServer) error {
-	return status.Error(codes.Unimplemented, "not implemented")
-}
-
-func (s *server) ClientStreamingEcho(stream ecpb.Echo_ClientStreamingEchoServer) error {
-	return status.Error(codes.Unimplemented, "not implemented")
-}
-
-func (s *server) BidirectionalStreamingEcho(stream ecpb.Echo_BidirectionalStreamingEchoServer) error {
+func bidirectionalStreamingEcho(stream pb.Echo_BidirectionalStreamingEchoServer) error {
 	for {
 		in, err := stream.Recv()
 		if err != nil {
@@ -76,7 +67,7 @@ func (s *server) BidirectionalStreamingEcho(stream ecpb.Echo_BidirectionalStream
 			return err
 		}
 		fmt.Printf("bidi echoing message %q\n", in.Message)
-		stream.Send(&ecpb.EchoResponse{Message: in.Message})
+		stream.Send(&pb.EchoResponse{Message: in.Message})
 	}
 }
 
@@ -154,15 +145,18 @@ func main() {
 	}
 
 	// Create tls based credential.
-	creds, err := credentials.NewServerTLSFromFile(testdata.Path("server1.pem"), testdata.Path("server1.key"))
+	creds, err := credentials.NewServerTLSFromFile(data.Path("x509/server_cert.pem"), data.Path("x509/server_key.pem"))
 	if err != nil {
 		log.Fatalf("failed to create credentials: %v", err)
 	}
 
 	s := grpc.NewServer(grpc.Creds(creds), grpc.UnaryInterceptor(unaryInterceptor), grpc.StreamInterceptor(streamInterceptor))
 
-	// Register EchoServer on the server.
-	ecpb.RegisterEchoServer(s, &server{})
+	// Register EchoService on the server.
+	pb.RegisterEchoService(s, &pb.EchoService{
+		UnaryEcho:                  unaryEcho,
+		BidirectionalStreamingEcho: bidirectionalStreamingEcho,
+	})
 
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)

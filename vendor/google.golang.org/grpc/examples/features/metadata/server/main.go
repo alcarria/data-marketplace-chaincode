@@ -31,9 +31,10 @@ import (
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	pb "google.golang.org/grpc/examples/features/proto/echo"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+
+	pb "google.golang.org/grpc/examples/features/proto/echo"
 )
 
 var port = flag.Int("port", 50051, "the port to serve on")
@@ -43,9 +44,7 @@ const (
 	streamingCount  = 10
 )
 
-type server struct{}
-
-func (s *server) UnaryEcho(ctx context.Context, in *pb.EchoRequest) (*pb.EchoResponse, error) {
+func unaryEcho(ctx context.Context, in *pb.EchoRequest) (*pb.EchoResponse, error) {
 	fmt.Printf("--- UnaryEcho ---\n")
 	// Create trailer in defer to record function return time.
 	defer func() {
@@ -74,7 +73,7 @@ func (s *server) UnaryEcho(ctx context.Context, in *pb.EchoRequest) (*pb.EchoRes
 	return &pb.EchoResponse{Message: in.Message}, nil
 }
 
-func (s *server) ServerStreamingEcho(in *pb.EchoRequest, stream pb.Echo_ServerStreamingEchoServer) error {
+func serverStreamingEcho(in *pb.EchoRequest, stream pb.Echo_ServerStreamingEchoServer) error {
 	fmt.Printf("--- ServerStreamingEcho ---\n")
 	// Create trailer in defer to record function return time.
 	defer func() {
@@ -111,7 +110,7 @@ func (s *server) ServerStreamingEcho(in *pb.EchoRequest, stream pb.Echo_ServerSt
 	return nil
 }
 
-func (s *server) ClientStreamingEcho(stream pb.Echo_ClientStreamingEchoServer) error {
+func clientStreamingEcho(stream pb.Echo_ClientStreamingEchoServer) error {
 	fmt.Printf("--- ClientStreamingEcho ---\n")
 	// Create trailer in defer to record function return time.
 	defer func() {
@@ -151,7 +150,7 @@ func (s *server) ClientStreamingEcho(stream pb.Echo_ClientStreamingEchoServer) e
 	}
 }
 
-func (s *server) BidirectionalStreamingEcho(stream pb.Echo_BidirectionalStreamingEchoServer) error {
+func bidirectionalStreamingEcho(stream pb.Echo_BidirectionalStreamingEchoServer) error {
 	fmt.Printf("--- BidirectionalStreamingEcho ---\n")
 	// Create trailer in defer to record function return time.
 	defer func() {
@@ -202,6 +201,11 @@ func main() {
 	fmt.Printf("server listening at %v\n", lis.Addr())
 
 	s := grpc.NewServer()
-	pb.RegisterEchoServer(s, &server{})
+	pb.RegisterEchoService(s, &pb.EchoService{
+		UnaryEcho:                  unaryEcho,
+		ServerStreamingEcho:        serverStreamingEcho,
+		ClientStreamingEcho:        clientStreamingEcho,
+		BidirectionalStreamingEcho: bidirectionalStreamingEcho,
+	})
 	s.Serve(lis)
 }

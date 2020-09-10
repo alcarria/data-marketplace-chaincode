@@ -27,11 +27,12 @@ import (
 	"net"
 	"sync"
 
-	epb "google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 	"google.golang.org/grpc/status"
+
+	epb "google.golang.org/genproto/googleapis/rpc/errdetails"
+	pb "google.golang.org/grpc/examples/helloworld/helloworld"
 )
 
 var port = flag.Int("port", 50052, "port number")
@@ -76,7 +77,8 @@ func main() {
 	}
 
 	s := grpc.NewServer()
-	pb.RegisterGreeterServer(s, &server{count: make(map[string]int)})
+	hw := &server{count: make(map[string]int)}
+	pb.RegisterGreeterService(s, &pb.GreeterService{SayHello: hw.SayHello})
 	if err := s.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v", err)
 	}

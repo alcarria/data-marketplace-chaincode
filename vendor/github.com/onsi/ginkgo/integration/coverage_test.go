@@ -1,7 +1,9 @@
 package integration_test
 
 import (
+	"io/ioutil"
 	"os/exec"
+	"regexp"
 
 	"fmt"
 
@@ -16,6 +18,7 @@ var _ = Describe("Coverage Specs", func() {
 		AfterEach(func() {
 			removeSuccessfully("./_fixtures/coverage_fixture/coverage_fixture.coverprofile")
 		})
+
 		It("works", func() {
 			session := startGinkgo("./_fixtures/coverage_fixture", "-cover")
 			Eventually(session).Should(gexec.Exit(0))
@@ -112,6 +115,14 @@ var _ = Describe("Coverage Specs", func() {
 
 			By("generating a combined coverage file", func() {
 				Ω("./_fixtures/combined_coverage_fixture/coverprofile-recursive.txt").Should(BeARegularFile())
+			})
+
+			By("and strips multiple mode specifier", func() {
+				re := regexp.MustCompile(`mode: atomic`)
+				bytes, err := ioutil.ReadFile("./_fixtures/combined_coverage_fixture/coverprofile-recursive.txt")
+				Ω(err).Should(BeNil())
+				matches := re.FindAllIndex(bytes, -1)
+				Ω(len(matches)).Should(Equal(1))
 			})
 
 			By("also generating the single package coverage files", func() {

@@ -36,9 +36,7 @@ var _ = Describe("DefaultReporter", func() {
 		reporter = reporters.NewDefaultReporter(reporterConfig, stenographer)
 	})
 
-	call := func(method string, args ...interface{}) st.FakeStenographerCall {
-		return st.NewFakeStenographerCall(method, args...)
-	}
+	call := st.NewFakeStenographerCall
 
 	Describe("SpecSuiteWillBegin", func() {
 		BeforeEach(func() {
@@ -223,7 +221,7 @@ var _ = Describe("DefaultReporter", func() {
 				})
 
 				It("should announce the measurement", func() {
-					Ω(stenographer.Calls()[0]).Should(Equal(call("AnnounceSuccesfulMeasurement", spec, false)))
+					Ω(stenographer.Calls()[0]).Should(Equal(call("AnnounceSuccessfulMeasurement", spec, false)))
 				})
 			})
 
@@ -233,13 +231,25 @@ var _ = Describe("DefaultReporter", func() {
 				})
 
 				It("should announce that it was slow", func() {
-					Ω(stenographer.Calls()[0]).Should(Equal(call("AnnounceSuccesfulSlowSpec", spec, false)))
+					Ω(stenographer.Calls()[0]).Should(Equal(call("AnnounceSuccessfulSlowSpec", spec, false)))
 				})
 			})
 
-			Context("Otherwise", func() {
-				It("should announce the succesful spec", func() {
-					Ω(stenographer.Calls()[0]).Should(Equal(call("AnnounceSuccesfulSpec", spec)))
+			Context("When the spec is successful", func() {
+				It("should announce the successful spec", func() {
+					Ω(stenographer.Calls()[0]).Should(Equal(call("AnnounceSuccessfulSpec", spec)))
+				})
+
+				Context("When ReportPassed flag is set", func() {
+					BeforeEach(func() {
+						reporterConfig.ReportPassed = true
+						reporter = reporters.NewDefaultReporter(reporterConfig, stenographer)
+						spec.CapturedOutput = "test scenario"
+					})
+
+					It("should announce the captured output", func() {
+						Ω(stenographer.Calls()[1]).Should(Equal(call("AnnounceCapturedOutput", spec.CapturedOutput)))
+					})
 				})
 			})
 		})
@@ -347,7 +357,7 @@ var _ = Describe("DefaultReporter", func() {
 					})
 
 					It("should announce the measurement", func() {
-						Ω(stenographer.Calls()[0]).Should(Equal(call("AnnounceSuccesfulMeasurement", spec, true)))
+						Ω(stenographer.Calls()[0]).Should(Equal(call("AnnounceSuccessfulMeasurement", spec, true)))
 					})
 				})
 
@@ -357,13 +367,25 @@ var _ = Describe("DefaultReporter", func() {
 					})
 
 					It("should announce that it was slow", func() {
-						Ω(stenographer.Calls()[0]).Should(Equal(call("AnnounceSuccesfulSlowSpec", spec, true)))
+						Ω(stenographer.Calls()[0]).Should(Equal(call("AnnounceSuccessfulSlowSpec", spec, true)))
 					})
 				})
 
-				Context("Otherwise", func() {
-					It("should announce the succesful spec", func() {
-						Ω(stenographer.Calls()[0]).Should(Equal(call("AnnounceSuccesfulSpec", spec)))
+				Context("When the spec is successful", func() {
+					It("should announce the successful spec", func() {
+						Ω(stenographer.Calls()[0]).Should(Equal(call("AnnounceSuccessfulSpec", spec)))
+					})
+
+					Context("When ReportPassed flag is set", func() {
+						BeforeEach(func() {
+							reporterConfig.ReportPassed = true
+							reporter = reporters.NewDefaultReporter(reporterConfig, stenographer)
+							spec.CapturedOutput = "test scenario"
+						})
+
+						It("should announce the captured output", func() {
+							Ω(stenographer.Calls()[1]).Should(Equal(call("AnnounceCapturedOutput", spec.CapturedOutput)))
+						})
 					})
 				})
 			})

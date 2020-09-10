@@ -9,8 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"github.com/hyperledger/fabric/core/chaincode/shim"
+        //logger "github.com/sirupsen/logrus"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/lgsvl/data-marketplace-chaincode/fakes"
 	"github.com/lgsvl/data-marketplace-chaincode/resources"
 	. "github.com/onsi/ginkgo"
@@ -20,7 +20,6 @@ import (
 var _ = Describe("DataContract", func() {
 	var (
 		fakeStub                   *fakes.ChaincodeStub
-		logger                     *shim.ChaincodeLogger
 		dataContractType           resources.DataContractType
 		dataContractProposal       resources.DataContractProposal
 		dataContractTypeExtras     resources.ContractTypeExtras
@@ -32,8 +31,7 @@ var _ = Describe("DataContract", func() {
 		providerAccountBytes       []byte
 		err                        error
 	)
-	BeforeEach(func() {
-		logger = shim.NewLogger("data-contract-test-logger")
+	BeforeEach(func() {		
 		fakeStub = new(fakes.ChaincodeStub)
 		consumerAccount = resources.Account{ID: "fake-consumer", Balance: 10, DocType: resources.ACCOUNT_DOCTYPE, Allowances: map[string]float64{}}
 		providerAccount = resources.Account{ID: "fake-provider", DocType: resources.ACCOUNT_DOCTYPE, Allowances: map[string]float64{}}
@@ -56,7 +54,7 @@ var _ = Describe("DataContract", func() {
 			}
 			fakeStub.GetStateReturnsOnCall(0, nil, fmt.Errorf("fake-error"))
 
-			response := resources.SubmitDataContractProposal(logger, fakeStub, dataContractProposal)
+			response := resources.SubmitDataContractProposal(fakeStub, dataContractProposal)
 			Expect(response.Message).To(Equal("error-failed-to-get-state-for-fake-consumer"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
 			Expect(fakeStub.GetStateCallCount()).To(Equal(1))
@@ -70,7 +68,7 @@ var _ = Describe("DataContract", func() {
 			}
 			fakeStub.GetStateReturnsOnCall(0, nil, nil)
 
-			response := resources.SubmitDataContractProposal(logger, fakeStub, dataContractProposal)
+			response := resources.SubmitDataContractProposal(fakeStub, dataContractProposal)
 			Expect(response.Message).To(Equal("error-business-does-not-exist-fake-consumer"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
 			Expect(fakeStub.GetStateCallCount()).To(Equal(1))
@@ -95,7 +93,7 @@ var _ = Describe("DataContract", func() {
 			fakeStub.GetStateReturnsOnCall(0, consumerBytes, nil)
 			fakeStub.GetStateReturnsOnCall(1, nil, fmt.Errorf("fake-get-data-contract-type-error"))
 
-			response := resources.SubmitDataContractProposal(logger, fakeStub, dataContractProposal)
+			response := resources.SubmitDataContractProposal(fakeStub, dataContractProposal)
 
 			Expect(response.Message).To(Equal("error-failed-to-get-state-for-fake-data-contract-type"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -121,7 +119,7 @@ var _ = Describe("DataContract", func() {
 			fakeStub.GetStateReturnsOnCall(0, consumerBytes, nil)
 			fakeStub.GetStateReturnsOnCall(1, nil, nil)
 
-			response := resources.SubmitDataContractProposal(logger, fakeStub, dataContractProposal)
+			response := resources.SubmitDataContractProposal(fakeStub, dataContractProposal)
 
 			Expect(response.Message).To(Equal("error-dataContractType-does-not-exist-fake-data-contract-type"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -147,7 +145,7 @@ var _ = Describe("DataContract", func() {
 			fakeStub.GetStateReturnsOnCall(0, consumerBytes, nil)
 			fakeStub.GetStateReturnsOnCall(1, []byte("fake-data-contact-type"), nil)
 
-			response := resources.SubmitDataContractProposal(logger, fakeStub, dataContractProposal)
+			response := resources.SubmitDataContractProposal(fakeStub, dataContractProposal)
 
 			Expect(response.Message).To(Equal("error-unmarshaling-fake-data-contract-type"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -184,7 +182,7 @@ var _ = Describe("DataContract", func() {
 				DataContractTypeID: "fake-data-contract-type",
 			}
 
-			response := resources.SubmitDataContractProposal(logger, fakeStub, dataContractProposal)
+			response := resources.SubmitDataContractProposal(fakeStub, dataContractProposal)
 
 			Expect(response.Message).To(Equal("no-enough-funds-to-fulfill-allowances"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -223,7 +221,7 @@ var _ = Describe("DataContract", func() {
 				DataContractTypeID: "fake-data-contract-type",
 			}
 
-			response := resources.SubmitDataContractProposal(logger, fakeStub, dataContractProposal)
+			response := resources.SubmitDataContractProposal(fakeStub, dataContractProposal)
 
 			Expect(response.Message).To(Equal("error-failed-to-get-state-for-fake-data-contract"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -261,7 +259,7 @@ var _ = Describe("DataContract", func() {
 				DataContractTypeID: "fake-data-contract-type",
 			}
 
-			response := resources.SubmitDataContractProposal(logger, fakeStub, dataContractProposal)
+			response := resources.SubmitDataContractProposal(fakeStub, dataContractProposal)
 
 			Expect(response.Message).To(Equal("error-resource-already-exists-fake-data-contract"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -317,7 +315,7 @@ var _ = Describe("DataContract", func() {
 				DataContractTimestamp: contractStartTime,
 			}
 
-			response := resources.SubmitDataContractProposal(logger, fakeStub, dataContractProposal)
+			response := resources.SubmitDataContractProposal(fakeStub, dataContractProposal)
 
 			Expect(response.Message).To(Equal(fmt.Sprintf("error-contract-creation-time-should-be-between-%s-and-%s", startTime, endTime)))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -373,7 +371,7 @@ var _ = Describe("DataContract", func() {
 				DataContractTimestamp: contractStartTime,
 			}
 
-			response := resources.SubmitDataContractProposal(logger, fakeStub, dataContractProposal)
+			response := resources.SubmitDataContractProposal(fakeStub, dataContractProposal)
 
 			Expect(response.Message).To(Equal(fmt.Sprintf("error-contract-creation-time-should-be-between-%s-and-%s", startTime, endTime)))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -437,7 +435,7 @@ var _ = Describe("DataContract", func() {
 				Extras:                dataContractProposalExtras,
 			}
 
-			response := resources.SubmitDataContractProposal(logger, fakeStub, dataContractProposal)
+			response := resources.SubmitDataContractProposal(fakeStub, dataContractProposal)
 
 			Expect(response.Message).To(Equal(fmt.Sprintf("error-contract-EndTime-should-be-between-%s-and-%s", startTime, endTime)))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -501,7 +499,7 @@ var _ = Describe("DataContract", func() {
 				Extras:                dataContractProposalExtras,
 			}
 
-			response := resources.SubmitDataContractProposal(logger, fakeStub, dataContractProposal)
+			response := resources.SubmitDataContractProposal(fakeStub, dataContractProposal)
 
 			Expect(response.Message).To(Equal(fmt.Sprintf("error-contract-EndTime-should-be-between-%s-and-%s", startTime, endTime)))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -521,7 +519,7 @@ var _ = Describe("DataContract", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(dataContractBytes, nil)
-			response := resources.GetDataContract(logger, fakeStub, "fake-data-contract")
+			response := resources.GetDataContract(fakeStub, "fake-data-contract")
 
 			errorMsg := fmt.Sprintf("error-docType-does-not-match-%s-vs-%s", resources.PERSON_DOCTYPE, resources.DATA_CONTRACT_DOCTYPE)
 			Expect(response.Message).To(Equal(errorMsg))
@@ -538,7 +536,7 @@ var _ = Describe("DataContract", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(dataContractBytes, nil)
-			response := resources.GetDataContract(logger, fakeStub, "fake-data-contract")
+			response := resources.GetDataContract(fakeStub, "fake-data-contract")
 
 			Expect(response.Message).To(Equal(""))
 			Expect(response.Status).To(Equal(int32(shim.OK)))
@@ -550,7 +548,7 @@ var _ = Describe("DataContract", func() {
 	Context(".GetDataContractState", func() {
 		It("should fail when stub fails to get GetDataContractState state", func() {
 			fakeStub.GetStateReturns(nil, fmt.Errorf("error-getting-data-contract"))
-			dataContractBytes, err := resources.GetDataContractState(logger, fakeStub, "fake-data-contract")
+			dataContractBytes, err := resources.GetDataContractState(fakeStub, "fake-data-contract")
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-failed-to-get-state-for-fake-data-contract"))
@@ -560,7 +558,7 @@ var _ = Describe("DataContract", func() {
 
 		It("should fail when stub fails to get GetDataContractState state", func() {
 			fakeStub.GetStateReturns(nil, nil)
-			dataContractBytes, err := resources.GetDataContractState(logger, fakeStub, "fake-data-contract")
+			dataContractBytes, err := resources.GetDataContractState(fakeStub, "fake-data-contract")
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-dataContract-does-not-exist-fake-data-contract"))
@@ -570,7 +568,7 @@ var _ = Describe("DataContract", func() {
 
 		It("should fail when json unmarshalling fails for GetDataContractState state", func() {
 			fakeStub.GetStateReturns([]byte("fake-type"), nil)
-			dataContractBytes, err := resources.GetDataContractState(logger, fakeStub, "fake-data-contract")
+			dataContractBytes, err := resources.GetDataContractState(fakeStub, "fake-data-contract")
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-unmarshaling-fake-data-contract"))
@@ -588,7 +586,7 @@ var _ = Describe("DataContract", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(dataContractBytes, nil)
-			dataContractBytes, err = resources.GetDataContractState(logger, fakeStub, "fake-data-contract")
+			dataContractBytes, err = resources.GetDataContractState(fakeStub, "fake-data-contract")
 
 			Expect(err).To(HaveOccurred())
 			errMsg := fmt.Sprintf("error-docType-does-not-match-%s-vs-%s", resources.PERSON_DOCTYPE, resources.DATA_CONTRACT_DOCTYPE)
@@ -607,7 +605,7 @@ var _ = Describe("DataContract", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(dataContractBytes, nil)
-			dataContractBytes, err = resources.GetDataContractState(logger, fakeStub, "fake-data-contract")
+			dataContractBytes, err = resources.GetDataContractState(fakeStub, "fake-data-contract")
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeStub.GetStateCallCount()).To(Equal(1))
@@ -622,7 +620,7 @@ var _ = Describe("DataContract", func() {
 				ID:      "fake-data-contract",
 			}
 
-			err = dataContract.SetFileStatus(logger, fakeStub, resources.PROPOSAL, resources.Hash{}, false)
+			err = dataContract.SetFileStatus(fakeStub, resources.PROPOSAL, resources.Hash{}, false)
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("failed-to-update-dataContract-fake-error"))
 			Expect(fakeStub.PutStateCallCount()).To(Equal(1))
@@ -635,7 +633,7 @@ var _ = Describe("DataContract", func() {
 				ID:      "fake-data-contract",
 			}
 
-			err = dataContract.SetFileStatus(logger, fakeStub, resources.PROPOSAL, resources.Hash{}, false)
+			err = dataContract.SetFileStatus(fakeStub, resources.PROPOSAL, resources.Hash{}, false)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeStub.PutStateCallCount()).To(Equal(1))
 

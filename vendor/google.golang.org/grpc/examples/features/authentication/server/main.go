@@ -32,10 +32,11 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
-	ecpb "google.golang.org/grpc/examples/features/proto/echo"
+	"google.golang.org/grpc/examples/data"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/grpc/testdata"
+
+	pb "google.golang.org/grpc/examples/features/proto/echo"
 )
 
 var (
@@ -49,7 +50,7 @@ func main() {
 	flag.Parse()
 	fmt.Printf("server starting on port %d...\n", *port)
 
-	cert, err := tls.LoadX509KeyPair(testdata.Path("server1.pem"), testdata.Path("server1.key"))
+	cert, err := tls.LoadX509KeyPair(data.Path("x509/server_cert.pem"), data.Path("x509/server_key.pem"))
 	if err != nil {
 		log.Fatalf("failed to load key pair: %s", err)
 	}
@@ -62,7 +63,7 @@ func main() {
 		grpc.Creds(credentials.NewServerTLSFromCert(&cert)),
 	}
 	s := grpc.NewServer(opts...)
-	ecpb.RegisterEchoServer(s, &ecServer{})
+	pb.RegisterEchoService(s, &pb.EchoService{UnaryEcho: unaryEcho})
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", *port))
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
@@ -72,19 +73,8 @@ func main() {
 	}
 }
 
-type ecServer struct{}
-
-func (s *ecServer) UnaryEcho(ctx context.Context, req *ecpb.EchoRequest) (*ecpb.EchoResponse, error) {
-	return &ecpb.EchoResponse{Message: req.Message}, nil
-}
-func (s *ecServer) ServerStreamingEcho(*ecpb.EchoRequest, ecpb.Echo_ServerStreamingEchoServer) error {
-	return status.Errorf(codes.Unimplemented, "not implemented")
-}
-func (s *ecServer) ClientStreamingEcho(ecpb.Echo_ClientStreamingEchoServer) error {
-	return status.Errorf(codes.Unimplemented, "not implemented")
-}
-func (s *ecServer) BidirectionalStreamingEcho(ecpb.Echo_BidirectionalStreamingEchoServer) error {
-	return status.Errorf(codes.Unimplemented, "not implemented")
+func unaryEcho(ctx context.Context, req *pb.EchoRequest) (*pb.EchoResponse, error) {
+	return &pb.EchoResponse{Message: req.Message}, nil
 }
 
 // valid validates the authorization.

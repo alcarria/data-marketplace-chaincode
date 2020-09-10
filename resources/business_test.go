@@ -8,8 +8,8 @@ package resources_test
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/hyperledger/fabric/core/chaincode/shim"
+        //logger "github.com/sirupsen/logrus"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/lgsvl/data-marketplace-chaincode/fakes"
 	"github.com/lgsvl/data-marketplace-chaincode/resources"
 	. "github.com/onsi/ginkgo"
@@ -19,11 +19,9 @@ import (
 var _ = Describe("Business", func() {
 	var (
 		fakeStub *fakes.ChaincodeStub
-		logger   *shim.ChaincodeLogger
 		business resources.Business
 	)
 	BeforeEach(func() {
-		logger = shim.NewLogger("business-test-logger")
 		fakeStub = new(fakes.ChaincodeStub)
 
 	})
@@ -31,7 +29,7 @@ var _ = Describe("Business", func() {
 	Context(".CreateBusiness", func() {
 		It("should fail when DocType does not correspond to business DocType", func() {
 			business = resources.Business{DocType: "fake-docType"}
-			response := resources.CreateBusiness(logger, fakeStub, business)
+			response := resources.CreateBusiness(fakeStub, business)
 			errMsg := fmt.Sprintf("error-docType-does-not-match-fake-docType-vs-%s", resources.BUSINESS_DOCTYPE)
 			Expect(response.Message).To(Equal(errMsg))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
@@ -43,7 +41,7 @@ var _ = Describe("Business", func() {
 				ID:      "fake-business",
 			}
 			fakeStub.GetStateReturns(nil, fmt.Errorf("fake-error"))
-			response := resources.CreateBusiness(logger, fakeStub, business)
+			response := resources.CreateBusiness(fakeStub, business)
 			Expect(response.Message).To(Equal("failed-to-get-business-fake-error"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
 			Expect(fakeStub.GetStateCallCount()).To(Equal(1))
@@ -60,7 +58,7 @@ var _ = Describe("Business", func() {
 
 			fakeStub.GetStateReturns(businessBytes, nil)
 
-			response := resources.CreateBusiness(logger, fakeStub, business)
+			response := resources.CreateBusiness(fakeStub, business)
 			Expect(response.Message).To(Equal("this-business-already-exists-fake-business"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
 			Expect(fakeStub.GetStateCallCount()).To(Equal(1))
@@ -76,7 +74,7 @@ var _ = Describe("Business", func() {
 			fakeStub.GetStateReturns(nil, nil)
 			fakeStub.PutStateReturns(fmt.Errorf("error-put-business"))
 
-			response := resources.CreateBusiness(logger, fakeStub, business)
+			response := resources.CreateBusiness(fakeStub, business)
 			Expect(response.Message).To(Equal("error-put-business"))
 			Expect(response.Status).To(Equal(int32(shim.ERROR)))
 			Expect(fakeStub.GetStateCallCount()).To(Equal(1))
@@ -89,7 +87,7 @@ var _ = Describe("Business", func() {
 				ID:      "fake-business",
 			}
 
-			response := resources.CreateBusiness(logger, fakeStub, business)
+			response := resources.CreateBusiness(fakeStub, business)
 			Expect(response.Message).To(Equal(""))
 			Expect(response.Status).To(Equal(int32(shim.OK)))
 			Expect(fakeStub.GetStateCallCount()).To(Equal(1))
@@ -107,7 +105,7 @@ var _ = Describe("Business", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(businessBytes, nil)
-			response := resources.GetBusiness(logger, fakeStub, "fake-business")
+			response := resources.GetBusiness(fakeStub, "fake-business")
 
 			errorMsg := fmt.Sprintf("error-docType-does-not-match-%s-vs-%s", resources.PERSON_DOCTYPE, resources.BUSINESS_DOCTYPE)
 			Expect(response.Message).To(Equal(errorMsg))
@@ -124,7 +122,7 @@ var _ = Describe("Business", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(businessBytes, nil)
-			response := resources.GetBusiness(logger, fakeStub, "fake-business")
+			response := resources.GetBusiness(fakeStub, "fake-business")
 
 			Expect(response.Message).To(Equal(""))
 			Expect(response.Status).To(Equal(int32(shim.OK)))
@@ -136,7 +134,7 @@ var _ = Describe("Business", func() {
 	Context(".GetBusinessState", func() {
 		It("should fail when stub fails to get business state", func() {
 			fakeStub.GetStateReturns(nil, fmt.Errorf("error-getting-business"))
-			businessBytes, err := resources.GetBusinessState(logger, fakeStub, "fake-business")
+			businessBytes, err := resources.GetBusinessState(fakeStub, "fake-business")
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-failed-to-get-state-for-fake-business"))
@@ -146,7 +144,7 @@ var _ = Describe("Business", func() {
 
 		It("should fail when stub returns nil to get business state", func() {
 			fakeStub.GetStateReturns(nil, nil)
-			businessBytes, err := resources.GetBusinessState(logger, fakeStub, "fake-business")
+			businessBytes, err := resources.GetBusinessState(fakeStub, "fake-business")
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-business-does-not-exist-fake-business"))
@@ -156,7 +154,7 @@ var _ = Describe("Business", func() {
 
 		It("should fail when json unmarshalling fails for business state", func() {
 			fakeStub.GetStateReturns([]byte("fake-json"), nil)
-			businessBytes, err := resources.GetBusinessState(logger, fakeStub, "fake-business")
+			businessBytes, err := resources.GetBusinessState(fakeStub, "fake-business")
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("error-unmarshalling-fake-business"))
@@ -173,7 +171,7 @@ var _ = Describe("Business", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(businessBytes, nil)
-			businessBytes, err = resources.GetBusinessState(logger, fakeStub, "fake-business")
+			businessBytes, err = resources.GetBusinessState(fakeStub, "fake-business")
 
 			Expect(err).To(HaveOccurred())
 			errorMsg := fmt.Sprintf("error-docType-does-not-match-%s-vs-%s", resources.PERSON_DOCTYPE, resources.BUSINESS_DOCTYPE)
@@ -191,7 +189,7 @@ var _ = Describe("Business", func() {
 			Expect(err).NotTo(HaveOccurred())
 
 			fakeStub.GetStateReturns(businessBytes, nil)
-			businessBytes, err = resources.GetBusinessState(logger, fakeStub, "fake-business")
+			businessBytes, err = resources.GetBusinessState(fakeStub, "fake-business")
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeStub.GetStateCallCount()).To(Equal(1))
@@ -223,7 +221,7 @@ var _ = Describe("Business", func() {
 		})
 		It("should fail when stub fails to put business state", func() {
 			fakeStub.PutStateReturns(fmt.Errorf("business-error"))
-			err := business.AddReview(logger, fakeStub, review)
+			err := business.AddReview(fakeStub, review)
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("business-error"))
@@ -232,7 +230,7 @@ var _ = Describe("Business", func() {
 
 		It("should succeed when stub succeeds to put business state", func() {
 			fakeStub.PutStateReturns(nil)
-			err := business.AddReview(logger, fakeStub, review)
+			err := business.AddReview(fakeStub, review)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeStub.PutStateCallCount()).To(Equal(1))
@@ -243,7 +241,7 @@ var _ = Describe("Business", func() {
 		})
 		It("should succeed to add two reviews and change score", func() {
 			fakeStub.PutStateReturns(nil)
-			err := business.AddReview(logger, fakeStub, review)
+			err := business.AddReview(fakeStub, review)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeStub.PutStateCallCount()).To(Equal(1))
@@ -252,7 +250,7 @@ var _ = Describe("Business", func() {
 			Expect(business.Score).To(Equal(float32(4)))
 			Expect(business.NumberOfReviews).To(Equal(1))
 
-			err = business.AddReview(logger, fakeStub, review2)
+			err = business.AddReview(fakeStub, review2)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeStub.PutStateCallCount()).To(Equal(2))
@@ -279,7 +277,7 @@ var _ = Describe("Business", func() {
 		})
 		It("should fail when stub fails to put business state", func() {
 			fakeStub.PutStateReturns(fmt.Errorf("business-error"))
-			err := business.AddPerson(logger, fakeStub, person)
+			err := business.AddPerson(fakeStub, person)
 
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("business-error"))
@@ -288,7 +286,7 @@ var _ = Describe("Business", func() {
 
 		It("should succeed when stub succeeds to put business state", func() {
 			fakeStub.PutStateReturns(nil)
-			err := business.AddPerson(logger, fakeStub, person)
+			err := business.AddPerson(fakeStub, person)
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(fakeStub.PutStateCallCount()).To(Equal(1))

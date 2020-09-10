@@ -8,17 +8,17 @@ package resources
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/hyperledger/fabric/core/chaincode/shim"
-	pb "github.com/hyperledger/fabric/protos/peer"
+        logger "github.com/sirupsen/logrus"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 )
 
-func CleanUp(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) pb.Response {
+func CleanUp(stub shim.ChaincodeStubInterface) pb.Response {
 	docTypes := []string{BUSINESS_DOCTYPE, DATA_CATEGORY_DOCTYPE, DATA_CONTRACT_DOCTYPE, REVIEW_DOCTYPE, DATA_CONTRACT_TYPE_DOCTYPE, PERSON_DOCTYPE, ACCOUNT_DOCTYPE, TOKEN_DOCTYPE}
 	//docTypes := []string{BUSINESS_DOCTYPE}
 
 	for _, docType := range docTypes {
-		err := deleteState(logger, stub, docType)
+		err := deleteState(stub, docType)
 		if err != nil {
 			logger.Error(err.Error())
 			return shim.Error(err.Error())
@@ -27,7 +27,7 @@ func CleanUp(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) pb.
 	return shim.Success([]byte(""))
 }
 
-func DeleteDoc(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, doc string) pb.Response {
+func DeleteDoc(stub shim.ChaincodeStubInterface, doc string) pb.Response {
 	logger.Info("entering-delete-doc")
 	defer logger.Info("exit-delete-doc")
 
@@ -38,14 +38,14 @@ func DeleteDoc(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, d
 
 	err := stub.DelState(doc)
 	if err != nil {
-		logger.Debug("failed-deleting-doc-%s", err.Error())
+		logger.Debugf("failed-deleting-doc-%s", err.Error())
 		return shim.Error(err.Error())
 	}
 	return shim.Success(nil)
 }
 
-func deleteState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, docType string) error {
-	queryResults, err := getDocumentsByDocType(logger, stub, docType)
+func deleteState(stub shim.ChaincodeStubInterface, docType string) error {
+	queryResults, err := getDocumentsByDocType(stub, docType)
 	if err != nil {
 		return err
 	}

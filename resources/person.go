@@ -8,9 +8,9 @@ package resources
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/hyperledger/fabric/core/chaincode/shim"
-	pb "github.com/hyperledger/fabric/protos/peer"
+       logger "github.com/sirupsen/logrus"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 )
 
 type Person struct {
@@ -20,12 +20,12 @@ type Person struct {
 	Role       Role   `json:"role"`
 }
 
-func AddPerson(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, person Person) pb.Response {
+func AddPerson(stub shim.ChaincodeStubInterface, person Person) pb.Response {
 	logger.Info("entering-create-person")
 	defer logger.Info("exiting-create-person")
 
 	// ==== Check person attributes
-	business, err := person.checkAndGetAttributes(logger, stub)
+	business, err := person.checkAndGetAttributes(stub)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -54,7 +54,7 @@ func AddPerson(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, p
 		return shim.Error(err.Error())
 	}
 
-	err = business.AddPerson(logger, stub, person)
+	err = business.AddPerson(stub, person)
 	if err != nil {
 		logger.Error(err.Error())
 		stub.DelState(person.ID)
@@ -64,10 +64,10 @@ func AddPerson(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, p
 	return shim.Success(nil)
 }
 
-func GetPerson(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, id string) pb.Response {
+func GetPerson(stub shim.ChaincodeStubInterface, id string) pb.Response {
 	logger.Info("entering-get-person")
 	defer logger.Info("exiting-get-person")
-	person, err := GetPersonState(logger, stub, id)
+	person, err := GetPersonState(stub, id)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -75,7 +75,7 @@ func GetPerson(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, i
 	return shim.Success(person)
 }
 
-func GetPersonState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, id string) ([]byte, error) {
+func GetPersonState(stub shim.ChaincodeStubInterface, id string) ([]byte, error) {
 	logger.Info("entering-get-personState")
 	defer logger.Info("exiting-create-personState")
 
@@ -97,7 +97,7 @@ func GetPersonState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterfa
 		return nil, fmt.Errorf(jsonResp)
 	}
 
-	_, err = person.checkAndGetAttributes(logger, stub)
+	_, err = person.checkAndGetAttributes(stub)
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -112,7 +112,7 @@ func GetPersonState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterfa
 	return personAsbytes, nil
 }
 
-func (p *Person) checkAndGetAttributes(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface) (Business, error) {
+func (p *Person) checkAndGetAttributes(stub shim.ChaincodeStubInterface) (Business, error) {
 	logger.Info("entering-checkAttributes-person")
 	defer logger.Info("exiting-checkAttributes-person")
 
@@ -122,7 +122,7 @@ func (p *Person) checkAndGetAttributes(logger *shim.ChaincodeLogger, stub shim.C
 		return Business{}, fmt.Errorf(errorMsg)
 	}
 
-	businessAsBytes, err := GetBusinessState(logger, stub, p.BusinessID)
+	businessAsBytes, err := GetBusinessState(stub, p.BusinessID)
 	if err != nil {
 		logger.Error(err.Error())
 		return Business{}, err

@@ -19,9 +19,10 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/hyperledger/fabric/core/chaincode/shim"
+	logger "github.com/sirupsen/logrus"
 	"golang.org/x/oauth2/jws"
 )
+
 
 // ExtendedJwsClaimSet extends JwsClaimSet
 type ExtendedJwsClaimSet struct {
@@ -265,7 +266,7 @@ func verifyJwsToken(jwsToken string) error {
 	return nil
 }
 
-func CheckAuth(logger *shim.ChaincodeLogger, auth string) error {
+func CheckAuth(auth string) error {
 	logger.Debug("entering-CheckAuth")
 	defer logger.Info("exiting-CheckAuth")
 	parts := strings.Split(auth, " ")
@@ -276,7 +277,7 @@ func CheckAuth(logger *shim.ChaincodeLogger, auth string) error {
 	return verifyJwsToken(parts[1])
 }
 
-func GetAccountIDFromToken(logger *shim.ChaincodeLogger, auth string) (string, error) {
+func GetAccountIDFromToken(auth string) (string, error) {
 	logger.Debug("entering-CheckAuth")
 	defer logger.Info("exiting-CheckAuth")
 	logger.Debugf("token: %s", auth)

@@ -8,9 +8,9 @@ package resources
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/hyperledger/fabric/core/chaincode/shim"
-	pb "github.com/hyperledger/fabric/protos/peer"
+        logger "github.com/sirupsen/logrus"
+	"github.com/hyperledger/fabric-chaincode-go/shim"
+	pb "github.com/hyperledger/fabric-protos-go/peer"
 )
 
 type DataCategory struct {
@@ -21,11 +21,11 @@ type DataCategory struct {
 	Children         []DataCategory `json:"children"`
 }
 
-func CreateDataCategory(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, category DataCategory) pb.Response {
+func CreateDataCategory(stub shim.ChaincodeStubInterface, category DataCategory) pb.Response {
 	logger.Info("entering-create-datacategory")
 	defer logger.Info("exiting-create-datacategory")
 
-	err := category.checkAttributes(logger)
+	err := category.checkAttributes()
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -57,10 +57,10 @@ func CreateDataCategory(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInt
 	return shim.Success(nil)
 }
 
-func GetDataCategory(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, id string) pb.Response {
+func GetDataCategory(stub shim.ChaincodeStubInterface, id string) pb.Response {
 	logger.Info("entering-get-datacategory")
 	defer logger.Info("exiting-get-datacategory")
-	categoryAsBytes, err := GetDataCategoryState(logger, stub, id)
+	categoryAsBytes, err := GetDataCategoryState(stub, id)
 	if err != nil {
 		logger.Error(err.Error())
 		return shim.Error(err.Error())
@@ -68,7 +68,7 @@ func GetDataCategory(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterf
 	return shim.Success(categoryAsBytes)
 }
 
-func GetDataCategoryState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubInterface, id string) ([]byte, error) {
+func GetDataCategoryState(stub shim.ChaincodeStubInterface, id string) ([]byte, error) {
 	logger.Info("entering-get-datacategoryState")
 	defer logger.Info("exiting-get-datacategoryState")
 	categoryAsbytes, err := stub.GetState(id) //get the category from chaincode state
@@ -90,7 +90,7 @@ func GetDataCategoryState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubI
 		return nil, fmt.Errorf(respMsg)
 	}
 
-	err = category.checkAttributes(logger)
+	err = category.checkAttributes()
 	if err != nil {
 		logger.Error(err.Error())
 		return nil, err
@@ -105,7 +105,7 @@ func GetDataCategoryState(logger *shim.ChaincodeLogger, stub shim.ChaincodeStubI
 	return categoryAsbytes, nil
 }
 
-func (d *DataCategory) checkAttributes(logger *shim.ChaincodeLogger) error {
+func (d *DataCategory) checkAttributes() error {
 	logger.Info("entering-checkAttributes-dataCategory")
 	defer logger.Info("exiting-checkAttributes-dataCategory")
 
