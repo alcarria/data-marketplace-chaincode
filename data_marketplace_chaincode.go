@@ -13,8 +13,8 @@ import (
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	"github.com/sirupsen/logrus"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/lgsvl/data-marketplace-chaincode/resources"
-	"github.com/lgsvl/data-marketplace-chaincode/utils"
+	"github.com/alcarria/data-marketplace-chaincode/resources"
+	"github.com/alcarria/data-marketplace-chaincode/utils"
 )
 
 var logger = logrus.New()
