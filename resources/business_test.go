@@ -10,8 +10,8 @@ import (
 	"fmt"
         //logger "github.com/sirupsen/logrus"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
-	"github.com/lgsvl/data-marketplace-chaincode/fakes"
-	"github.com/lgsvl/data-marketplace-chaincode/resources"
+	"github.com/alcarria/data-marketplace-chaincode/fakes"
+	"github.com/alcarria/data-marketplace-chaincode/resources"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

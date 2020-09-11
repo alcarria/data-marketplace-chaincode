@@ -12,7 +12,7 @@ import (
         logger "github.com/sirupsen/logrus"
 	"github.com/hyperledger/fabric-chaincode-go/shim"
 	pb "github.com/hyperledger/fabric-protos-go/peer"
-	"github.com/lgsvl/data-marketplace-chaincode/utils"
+	"github.com/alcarria/data-marketplace-chaincode/utils"
 )
 
 type DataContract struct {
